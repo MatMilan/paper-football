@@ -24,7 +24,10 @@
           Игрок 2 (синий)
           <input id="player2Name" maxlength="20" autocomplete="off" list="profilesList" placeholder="Например: Мария" />
         </label>
-
+        <label class="checkbox-row">
+          <input type="checkbox" id="aiToggle" />
+          Играть против ИИ (Игрок 2)
+        </label>
         <datalist id="profilesList"></datalist>
 
         <div class="row">
@@ -106,6 +109,7 @@
   <script src="js/render.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/game.js"></script>
+  <script src="js/ai.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
