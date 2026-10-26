@@ -433,3 +433,17 @@ canvas {
     font-size: 13px;
   }
 }
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0;
+  color: #dbe2ea;
+  font-size: 14px;
+}
+
+.checkbox-row input {
+  width: auto;
+  margin: 0;
+}
