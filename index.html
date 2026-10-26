@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#12151b" />
+  <title>Футбол на бумаге</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <!-- Экран авторизации -->
+  <div id="authScreen" class="overlay">
+    <div class="card auth-card">
+      <h1>Футбол на бумаге</h1>
+      <p class="muted">Введите имена игроков, чтобы начать матч.</p>
+
+      <form id="authForm">
+        <label>
+          Игрок 1 (красный)
+          <input id="player1Name" maxlength="20" autocomplete="off" list="profilesList" placeholder="Например: Андрей" />
+        </label>
+
+        <label>
+          Игрок 2 (синий)
+          <input id="player2Name" maxlength="20" autocomplete="off" list="profilesList" placeholder="Например: Мария" />
+        </label>
+
+        <datalist id="profilesList"></datalist>
+
+        <div class="row">
+          <button type="submit" class="primary">Начать матч</button>
+          <button type="button" id="showStatsFromAuth">Статистика</button>
+        </div>
+
+        <div id="authError" class="error"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно статистики -->
+  <div id="statsModal" class="overlay hidden">
+    <div class="card stats-card">
+      <div class="modal-header">
+        <h2>Статистика игроков</h2>
+        <button id="closeStats" title="Закрыть">×</button>
+      </div>
+      <div id="statsTableWrap"></div>
+    </div>
+  </div>
+
+  <!-- Игра -->
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="player-chip p1" id="player1Chip">Игрок 1</div>
+
+      <div class="timer-wrap" id="timerWrap">
+        <svg viewBox="0 0 48 48" aria-hidden="true">
+          <circle class="timer-ring-bg" cx="24" cy="24" r="20"></circle>
+          <circle id="timerRing" cx="24" cy="24" r="20"></circle>
+        </svg>
+        <span id="timerText">20</span>
+      </div>
+
+      <div class="player-chip p2" id="player2Chip">Игрок 2</div>
+
+      <div class="badge" id="phaseBadge">простой ход</div>
+    </header>
+
+    <div class="controls">
+      <button id="cannotMoveBtn">Не могу ходить</button>
+      <button id="offerDrawBtn">Предложить ничью</button>
+      <button id="soundBtn">Звук: вкл</button>
+      <button id="historyToggleBtn">История</button>
+      <button id="statsBtn">Статистика</button>
+      <button id="newMatchBtn">Новый матч</button>
+      <button id="logoutBtn">Сменить игроков</button>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <main class="main">
+      <div class="board-wrap">
+        <canvas id="board"></canvas>
+      </div>
+
+      <aside id="historyPanel" class="history-panel hidden">
+        <h3>История</h3>
+        <ol id="historyList"></ol>
+      </aside>
+    </main>
+  </div>
+
+  <!-- Оверлей гола -->
+  <div id="goalOverlay" class="goal-overlay hidden">
+    <div id="goalText">Гол!</div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/geometry.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/stats.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
