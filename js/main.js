@@ -1,10 +1,16 @@
 document.addEventListener("DOMContentLoaded", () => {
   PF.render.init(document.getElementById("board"));
   PF.ui.init();
+  if (PF.replay) {
+    PF.replay.init();
+  }
 
   const canvas = PF.render.canvas;
 
   canvas.addEventListener("click", (e) => {
+    if (PF.replay && PF.replay.active) {
+      return;
+    }
     const state = PF.game.state;
 
     if (!state || state.over || state.animating) return;
