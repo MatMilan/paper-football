@@ -100,6 +100,17 @@ PF.render = {
         x: from.x + (to.x - from.x) * t,
         y: from.y + (to.y - from.y) * t
       };
+      state.trail = state.trail || [];
+
+      state.trail.push({
+        x: state.displayBall.x,
+        y: state.displayBall.y,
+        player: state.currentPlayer
+      });
+
+      if (state.trail.length > 16) {
+        state.trail.shift();
+      }
 
       this.draw(state);
 
@@ -230,12 +241,29 @@ PF.render = {
       const a = PF.geo.toCanvas(s.a);
       const b = PF.geo.toCanvas(s.b);
 
-      ctx.strokeStyle =
+      const isLast = state.lastSegment && state.lastSegment === s;
+
+      const baseColor =
         s.player === 1
           ? "rgba(255,93,93,.92)"
           : "rgba(93,155,255,.92)";
 
+      const glowColor =
+        s.player === 1
+          ? "#ff5d5d"
+          : "#5d9bff";
+
+      ctx.strokeStyle = baseColor;
       ctx.lineWidth = s.penalty ? 4 : 3;
+
+      if (isLast) {
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 14;
+        ctx.lineWidth += 1.4;
+      } else {
+        ctx.shadowBlur = 0;
+      }
+
       ctx.setLineDash(s.penalty ? [10, 7] : []);
 
       ctx.beginPath();
@@ -245,6 +273,7 @@ PF.render = {
     }
 
     ctx.setLineDash([]);
+    ctx.shadowBlur = 0;
     ctx.restore();
   },
 
@@ -294,6 +323,31 @@ PF.render = {
   },
 
   drawBall(ctx, state) {
+    if (state.trail && state.trail.length) {
+      ctx.save();
+
+      for (let i = 0; i < state.trail.length; i++) {
+        const t = state.trail[i];
+        const progress = (i + 1) / state.trail.length;
+        const alpha = progress * 0.22;
+        const radius = 2 + progress * 4.4;
+
+        const p = PF.geo.toCanvas(t);
+
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, radius, 0, Math.PI * 2);
+
+        ctx.fillStyle =
+          t.player === 1
+            ? `rgba(255,93,93,${alpha})`
+            : `rgba(93,155,255,${alpha})`;
+
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
     const p = PF.geo.toCanvas(state.displayBall);
 
     ctx.save();
