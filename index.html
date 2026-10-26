@@ -51,6 +51,18 @@
     </div>
   </div>
 
+    <!-- Модальное окно сохраненных партий -->
+  <div id="replaysModal" class="overlay hidden">
+    <div class="card replays-card">
+      <div class="modal-header">
+        <h2>Сохраненные партии</h2>
+        <button id="closeReplays" title="Закрыть">×</button>
+      </div>
+
+      <div id="replaysList" class="saved-list"></div>
+    </div>
+  </div>
+
   <!-- Игра -->
   <div id="app" class="app hidden">
     <header class="topbar">
@@ -75,6 +87,8 @@
       <button id="soundBtn">Звук: вкл</button>
       <button id="historyToggleBtn">История</button>
       <button id="statsBtn">Статистика</button>
+      <button id="saveMatchBtn">Сохранить партию</button>
+      <button id="replaysBtn">Повторы</button>
       <button id="newMatchBtn">Новый матч</button>
       <button id="logoutBtn">Сменить игроков</button>
     </div>
@@ -92,7 +106,16 @@
       </aside>
     </main>
   </div>
-
+  <div id="replayBar" class="replay-bar hidden">
+    <button id="replayExit">Выход</button>
+    <button id="replayFirst">⏮</button>
+    <button id="replayPrev">◀</button>
+    <button id="replayPlayPause">▶</button>
+    <button id="replayNext">▶</button>
+    <button id="replayLast">⏭</button>
+    <input id="replaySlider" type="range" min="0" value="0" />
+    <span id="replayInfo">0/0</span>
+  </div>
   <!-- Оверлей гола -->
   <div id="goalOverlay" class="goal-overlay hidden">
     <div id="goalText">Гол!</div>
@@ -110,6 +133,7 @@
   <script src="js/ui.js"></script>
   <script src="js/game.js"></script>
   <script src="js/ai.js"></script>
+  <script src="js/replay.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
