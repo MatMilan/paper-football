@@ -1,4 +1,4 @@
-PF.game = {
+  PF.game = {
   state: null,
   timerId: null,
 
@@ -22,6 +22,9 @@ PF.game = {
       `Матч начался. Первым ходит ${this.state.players[this.state.currentPlayer]}.`,
       "event"
     );
+    if (PF.save) {
+      PF.save.logStart(this.state);
+    }
 
     PF.ui.setMessage("Игра началась.");
     this.startTurn(this.state.currentPlayer, "simple");
@@ -200,6 +203,10 @@ PF.game = {
 
     PF.render.animateBall(s, visual, duration, () => {
       if (scorer) {
+        if (PF.save) {
+          PF.save.logSimple(s, true, scorer);
+        }
+
         this.declareGoal(scorer);
         return;
       }
@@ -231,6 +238,9 @@ PF.game = {
     if (!s) return;
 
     PF.history.logSimple(s);
+    if (PF.save) {
+      PF.save.logSimple(s, false);
+    }
 
     s.timeoutStreak = 0;
     s.cannotStreak = 0;
@@ -274,6 +284,10 @@ PF.game = {
 
     PF.render.animateBall(s, visual, duration, () => {
       if (scorer) {
+        if (PF.save) {
+          PF.save.logPenalty(s, a, p, visual, true, scorer);
+        }
+
         this.declareGoal(scorer);
         return;
       }
@@ -287,6 +301,9 @@ PF.game = {
       s.timeoutStreak = 0;
       s.cannotStreak = 0;
       s.lastDrawOfferBy = null;
+      if (PF.save) {
+        PF.save.logPenalty(s, a, p, visual, false, null);
+      }
 
       const next = this.other(s.currentPlayer);
 
@@ -311,6 +328,7 @@ PF.game = {
     s.segments.push(seg);
     s.segmentSet.add(sk);
     s.turnSegments.push({ seg, sk });
+    s.lastSegment = seg;
   },
 
   rollbackCurrentSimpleMove() {
@@ -331,6 +349,11 @@ PF.game = {
     s.ball = PF.geo.clone(s.turnStartBall);
     s.displayBall = PF.geo.clone(s.ball);
     s.path = [PF.geo.clone(s.ball)];
+    s.lastSegment = s.segments.length
+      ? s.segments[s.segments.length - 1]
+      : null;
+
+    s.trail = [];
   },
 
   handleTimeout() {
@@ -412,6 +435,11 @@ PF.game = {
     }
 
     const scorerName = s.players[scorer];
+    s.result = {
+      type: "goal",
+      winner: scorer,
+      text: `Гол! ${scorerName} побеждает.`
+    };
     const concededName = s.players[this.other(scorer)];
 
     PF.audio.goal();
@@ -426,6 +454,9 @@ PF.game = {
     });
 
     PF.history.logGoal(s, scorer);
+    if (PF.save) {
+      PF.save.autoSaveCurrent();
+    }
     PF.ui.showGoalOverlay(scorerName);
     PF.ui.setMessage(`Гол! ${scorerName} побеждает.`);
     PF.ui.updateHUD(s);
@@ -441,6 +472,10 @@ PF.game = {
 
     s.over = true;
     s.phase = "draw";
+    s.result = {
+      type: "draw",
+      text: reason || "Ничья."
+    };
     if (PF.ai) {
       PF.ai.stop();
     }
@@ -454,6 +489,10 @@ PF.game = {
     });
 
     PF.history.logDraw(s, reason);
+    if (PF.save) {
+      PF.save.logDraw(s, reason);
+      PF.save.autoSaveCurrent();
+    }
     PF.ui.setMessage(reason);
     PF.ui.updateHUD(s);
     PF.render.draw(s);
