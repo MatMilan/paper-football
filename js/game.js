@@ -6,7 +6,7 @@
     return player === 1 ? 2 : 1;
   },
 
-  startMatch(p1, p2) {
+  startMatch(p1, p2, cloudProfiles = null) {
     if (this.state && this.state.noMoveTimer) {
       clearTimeout(this.state.noMoveTimer);
     }
@@ -14,6 +14,9 @@
     clearInterval(this.timerId);
 
     this.state = PF.state.create({ 1: p1, 2: p2 });
+    if (cloudProfiles && cloudProfiles.p1 && cloudProfiles.p2) {
+      this.state.cloud = cloudProfiles;
+    }
 
     PF.ui.showGame();
     PF.history.clear(this.state);
@@ -22,6 +25,13 @@
       `Матч начался. Первым ходит ${this.state.players[this.state.currentPlayer]}.`,
       "event"
     );
+    if (this.state.cloud?.p1 && this.state.cloud?.p2) {
+      PF.history.add(
+        this.state,
+        "Облачная статистика включена.",
+        "event"
+      );
+    }
     if (PF.save) {
       PF.save.logStart(this.state);
     }
@@ -457,6 +467,9 @@
     if (PF.save) {
       PF.save.autoSaveCurrent();
     }
+    if (PF.cloud) {
+      PF.cloud.syncMatch(s);
+    }
     PF.ui.showGoalOverlay(scorerName);
     PF.ui.setMessage(`Гол! ${scorerName} побеждает.`);
     PF.ui.updateHUD(s);
@@ -492,6 +505,9 @@
     if (PF.save) {
       PF.save.logDraw(s, reason);
       PF.save.autoSaveCurrent();
+    }
+    if (PF.cloud) {
+      PF.cloud.syncMatch(s);
     }
     PF.ui.setMessage(reason);
     PF.ui.updateHUD(s);
