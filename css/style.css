@@ -537,3 +537,38 @@ canvas {
 .replays-card {
   max-width: 680px;
 }
+.cloud-auth-box {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.cloud-title {
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.leaders-card {
+  max-width: 760px;
+}
+
+.leaders-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.leaders-table th,
+.leaders-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.leaders-table th {
+  color: var(--muted);
+  font-weight: 700;
+}
