@@ -51,6 +51,9 @@ PF.game = {
     PF.render.draw(s);
 
     this.scheduleNoMoveIfNeeded();
+    if (PF.ai) {
+      PF.ai.maybePlay();
+    }
   },
 
   resetTimer() {
@@ -149,6 +152,9 @@ PF.game = {
   clickPoint(target) {
     const s = this.state;
     if (!s || s.over || s.animating || s.timeLeft <= 0) return;
+    if (PF.ai && PF.ai.enabled && s.currentPlayer === PF.ai.player) {
+      return;
+    }
 
     clearTimeout(s.noMoveTimer);
     s.noMoveTimer = null;
@@ -213,6 +219,9 @@ PF.game = {
         PF.ui.updateHUD(s);
         PF.render.draw(s);
         this.scheduleNoMoveIfNeeded();
+        if (PF.ai) {
+          PF.ai.maybePlay();
+        }
       }
     });
   },
@@ -398,6 +407,9 @@ PF.game = {
 
     s.over = true;
     s.phase = "goal";
+    if (PF.ai) {
+      PF.ai.stop();
+    }
 
     const scorerName = s.players[scorer];
     const concededName = s.players[this.other(scorer)];
@@ -429,6 +441,9 @@ PF.game = {
 
     s.over = true;
     s.phase = "draw";
+    if (PF.ai) {
+      PF.ai.stop();
+    }
 
     PF.audio.draw();
 
@@ -461,6 +476,9 @@ PF.game = {
 
     clearInterval(this.timerId);
     this.state = null;
+    if (PF.ai) {
+      PF.ai.stop();
+    }
 
     PF.ui.showAuth();
     PF.ui.setMessage("");
