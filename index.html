@@ -24,6 +24,21 @@
           Игрок 2 (синий)
           <input id="player2Name" maxlength="20" autocomplete="off" list="profilesList" placeholder="Например: Мария" />
         </label>
+        <div class="cloud-auth-box">
+          <div class="cloud-title">Облачная статистика (необязательно)</div>
+
+          <label>
+            PIN Игрока 1
+            <input id="player1Pin" type="password" maxlength="32" autocomplete="off" placeholder="Если есть облачный профиль" />
+          </label>
+
+          <label>
+            PIN Игрока 2
+            <input id="player2Pin" type="password" maxlength="32" autocomplete="off" placeholder="Если есть облачный профиль" />
+          </label>
+
+          <div id="cloudStatus" class="muted"></div>
+        </div>
         <label class="checkbox-row">
           <input type="checkbox" id="aiToggle" />
           Играть против ИИ (Игрок 2)
@@ -62,6 +77,17 @@
       <div id="replaysList" class="saved-list"></div>
     </div>
   </div>
+    <!-- Модальное окно таблицы лидеров -->
+  <div id="leadersModal" class="overlay hidden">
+    <div class="card leaders-card">
+      <div class="modal-header">
+        <h2>Таблица лидеров</h2>
+        <button id="closeLeaders" title="Закрыть">×</button>
+      </div>
+  
+      <div id="leadersTableWrap"></div>
+    </div>
+  </div>
 
   <!-- Игра -->
   <div id="app" class="app hidden">
@@ -87,6 +113,7 @@
       <button id="soundBtn">Звук: вкл</button>
       <button id="historyToggleBtn">История</button>
       <button id="statsBtn">Статистика</button>
+      <button id="leadersBtn">Лидеры</button>
       <button id="saveMatchBtn">Сохранить партию</button>
       <button id="replaysBtn">Повторы</button>
       <button id="newMatchBtn">Новый матч</button>
@@ -121,6 +148,7 @@
     <div id="goalText">Гол!</div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/audio.js"></script>
   <script src="js/geometry.js"></script>
@@ -134,6 +162,7 @@
   <script src="js/game.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/replay.js"></script>
+  <script src="js/cloud.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
