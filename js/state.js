@@ -27,6 +27,11 @@ PF.state = {
       over: false,
       animating: false,
       timeoutPending: false,
+      events: [],
+      result: null,
+      saved: false,
+      lastSegment: null,
+      trail: [],
 
       history: [],
       noMoveTimer: null
