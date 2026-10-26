@@ -32,6 +32,12 @@ PF.state = {
       saved: false,
       lastSegment: null,
       trail: [],
+      cloud: {
+        p1: null,
+        p2: null
+      },
+      cloudSyncing: false,
+      cloudSynced: false,
 
       history: [],
       noMoveTimer: null
