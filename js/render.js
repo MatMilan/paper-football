@@ -127,6 +127,7 @@ PF.render = {
     this.drawGrid(ctx);
     this.drawPoints(ctx, state);
     this.drawSegments(ctx, state);
+    this.drawGoalLabels(ctx, state);
 
     if (!state.animating) {
       this.drawTargets(ctx, state);
@@ -312,5 +313,95 @@ PF.render = {
     ctx.fill();
 
     ctx.restore();
+  },
+  
+  drawGoalLabels(ctx, state) {
+  if (!state || !state.players) return;
+
+  const centerX = PF.CFG.cellsX / 2;
+
+  const topPos = PF.geo.toCanvas({
+    x: centerX,
+    y: 1.35
+  });
+
+  const bottomPos = PF.geo.toCanvas({
+    x: centerX,
+    y: PF.CFG.cellsY - 1.35
+  });
+
+  const p1 = this.truncateName(state.players[1], 14);
+  const p2 = this.truncateName(state.players[2], 14);
+
+  this.drawPillText(
+    ctx,
+    `${p1} сюда ↑`,
+    topPos.x,
+    topPos.y,
+    "#d64545"
+  );
+
+  this.drawPillText(
+    ctx,
+    `${p2} сюда ↓`,
+    bottomPos.x,
+    bottomPos.y,
+    "#2f6fdb"
+  );
+},
+
+truncateName(name, max = 14) {
+  const clean = String(name || "").trim();
+
+  if (clean.length <= max) {
+    return clean;
   }
+
+  return clean.slice(0, max - 1) + "…";
+},
+
+drawPillText(ctx, text, x, y, color) {
+  ctx.save();
+
+  ctx.font = "700 12px system-ui, Arial";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  const metrics = ctx.measureText(text);
+  const w = metrics.width + 18;
+  const h = 21;
+
+  const rx = x - w / 2;
+  const ry = y - h / 2;
+
+  ctx.fillStyle = "rgba(255,255,255,.84)";
+  this.roundRect(ctx, rx, ry, w, h, 10);
+  ctx.fill();
+
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.6;
+  this.roundRect(ctx, rx, ry, w, h, 10);
+  ctx.stroke();
+
+  ctx.fillStyle = color;
+  ctx.fillText(text, x, y + 0.5);
+
+  ctx.restore();
+},
+
+roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+
+  ctx.closePath();
+}
 };
