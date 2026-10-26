@@ -20,6 +20,7 @@ PF.ui = {
       profilesList: document.getElementById("profilesList"),
       authError: document.getElementById("authError"),
       showStatsFromAuth: document.getElementById("showStatsFromAuth"),
+      aiToggle: document.getElementById("aiToggle"),
 
       app: document.getElementById("app"),
 
@@ -197,6 +198,11 @@ PF.ui = {
 
       let p1 = this.els.player1Name.value.trim();
       let p2 = this.els.player2Name.value.trim();
+      const aiEnabled = this.els.aiToggle.checked;
+
+      if (aiEnabled && !p2) {
+        p2 = "Компьютер";
+      }
 
       if (!p1 || !p2) {
         this.els.authError.textContent = "Введите имена обоих игроков.";
@@ -222,6 +228,11 @@ PF.ui = {
 
       this.populateAuth();
       this.showGame();
+      if (PF.ai) {
+        PF.ai.enabled = aiEnabled;
+        PF.ai.player = 2;
+        PF.ai.stop();
+      }
 
       PF.game.startMatch(p1, p2);
     });
