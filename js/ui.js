@@ -9,10 +9,24 @@ PF.ui = {
     this.bindControls();
     this.populateAuth();
     this.updateSoundBtn();
+    if (PF.cloud) {
+      PF.cloud.init();
+      this.updateCloudStatus();
+    }
+
+    this.bindCloud();
   },
 
   cache() {
     this.els = {
+      player1Pin: document.getElementById("player1Pin"),
+      player2Pin: document.getElementById("player2Pin"),
+      cloudStatus: document.getElementById("cloudStatus"),
+      leadersBtn: document.getElementById("leadersBtn"),
+      leadersModal: document.getElementById("leadersModal"),
+      closeLeaders: document.getElementById("closeLeaders"),
+      leadersTableWrap: document.getElementById("leadersTableWrap"),
+      
       authScreen: document.getElementById("authScreen"),
       authForm: document.getElementById("authForm"),
       player1Name: document.getElementById("player1Name"),
@@ -193,12 +207,13 @@ PF.ui = {
   },
 
   bindAuth() {
-    this.els.authForm.addEventListener("submit", (e) => {
+    this.els.authForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       let p1 = this.els.player1Name.value.trim();
       let p2 = this.els.player2Name.value.trim();
-      const aiEnabled = this.els.aiToggle.checked;
+
+      const aiEnabled = this.els.aiToggle && this.els.aiToggle.checked;
 
       if (aiEnabled && !p2) {
         p2 = "Компьютер";
@@ -217,6 +232,45 @@ PF.ui = {
         return;
       }
 
+      const pin1 = (this.els.player1Pin?.value || "").trim();
+      const pin2 = (this.els.player2Pin?.value || "").trim();
+
+      const cloud = {
+        p1: null,
+        p2: null
+      };
+
+      if (!aiEnabled) {
+        if (PF.cloud && PF.cloud.ready) {
+          if (pin1 && pin2) {
+            try {
+              this.els.authError.textContent = "Проверка облачных профилей...";
+
+              cloud.p1 = await PF.cloud.loginOrRegister(p1, pin1);
+              cloud.p2 = await PF.cloud.loginOrRegister(p2, pin2);
+
+              if (cloud.p1.id === cloud.p2.id) {
+                this.els.authError.textContent =
+                  "Облачные профили игроков должны быть разными.";
+                return;
+              }
+            } catch (err) {
+              this.els.authError.textContent =
+                err.message || "Ошибка облачной авторизации.";
+              return;
+            }
+          } else if (pin1 || pin2) {
+            this.els.authError.textContent =
+              "Для облачной статистики нужно указать PIN обоих игроков или оставить оба поля пустыми.";
+            return;
+          }
+        } else if (pin1 || pin2) {
+          this.els.authError.textContent =
+            "Supabase не настроен. Либо вставь ключи в js/cloud.js, либо оставь поля PIN пустыми.";
+          return;
+        }
+      }
+
       this.els.authError.textContent = "";
 
       PF.auth.addProfile(p1);
@@ -228,13 +282,20 @@ PF.ui = {
 
       this.populateAuth();
       this.showGame();
+
       if (PF.ai) {
         PF.ai.enabled = aiEnabled;
         PF.ai.player = 2;
         PF.ai.stop();
       }
 
-      PF.game.startMatch(p1, p2);
+      PF.game.startMatch(p1, p2, cloud);
+
+      if (cloud.p1 && cloud.p2) {
+        this.setMessage("Облачная статистика включена.");
+      } else {
+        this.setMessage("Локальный режим.");
+      }
     });
 
     this.els.showStatsFromAuth.addEventListener("click", () => {
@@ -289,4 +350,90 @@ PF.ui = {
       PF.game.logout();
     });
   }
+  updateCloudStatus() {
+    if (!this.els.cloudStatus) return;
+
+    this.els.cloudStatus.textContent =
+      PF.cloud?.ready
+        ? "Supabase подключен: можно использовать облачную статистику."
+        : "Supabase не настроен: будет локальная статистика.";
+  },
+
+  bindCloud() {
+    if (this.els.leadersBtn) {
+      this.els.leadersBtn.addEventListener("click", () => {
+        this.renderLeaders();
+
+        if (this.els.leadersModal) {
+          this.els.leadersModal.classList.remove("hidden");
+        }
+      });
+    }
+
+    if (this.els.closeLeaders) {
+      this.els.closeLeaders.addEventListener("click", () => {
+        if (this.els.leadersModal) {
+          this.els.leadersModal.classList.add("hidden");
+        }
+      });
+    }
+  },
+
+  async renderLeaders() {
+    const wrap = this.els.leadersTableWrap;
+    if (!wrap) return;
+
+    if (!PF.cloud?.ready) {
+      wrap.innerHTML = '<p class="muted">Supabase не настроен. Вставь ключи в js/cloud.js.</p>';
+      return;
+    }
+
+    wrap.innerHTML = '<p class="muted">Загрузка...</p>';
+
+    try {
+      const rows = await PF.cloud.fetchLeaders();
+
+      if (!rows.length) {
+        wrap.innerHTML = '<p class="muted">Пока нет облачных профилей.</p>';
+        return;
+      }
+
+      const body = rows
+        .map((row) => {
+          return `
+            <tr>
+              <td>${this.escape(row.display_name)}</td>
+              <td>${row.rating}</td>
+              <td>${row.games}</td>
+              <td>${row.wins}</td>
+              <td>${row.draws}</td>
+              <td>${row.losses}</td>
+              <td>${row.goals_for}:${row.goals_against}</td>
+            </tr>
+          `;
+        })
+        .join("");
+
+      wrap.innerHTML = `
+        <table class="leaders-table">
+          <thead>
+            <tr>
+              <th>Игрок</th>
+              <th>Рейтинг</th>
+              <th>И</th>
+              <th>В</th>
+              <th>Н</th>
+              <th>П</th>
+              <th>Голы</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${body}
+          </tbody>
+        </table>
+      `;
+    } catch (e) {
+      wrap.innerHTML = `<p class="error">Ошибка загрузки лидеров: ${this.escape(e.message)}</p>`;
+    }
+  },
 };
