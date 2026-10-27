@@ -572,3 +572,54 @@ canvas {
   color: var(--muted);
   font-weight: 700;
 }
+.online-card {
+  max-width: 480px;
+  text-align: center;
+}
+
+.online-card h2 {
+  margin-top: 0;
+}
+
+#onlineMenu {
+  display: grid;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.divider {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.join-row {
+  display: flex;
+  gap: 8px;
+}
+
+.join-row input {
+  flex: 1;
+  text-transform: uppercase;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+#waitingRoom {
+  margin: 20px 0;
+}
+
+#waitingRoom p {
+  margin: 10px 0;
+}
+
+#roomCodeDisplay {
+  font-size: 24px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+
+#backToAuthBtn {
+  margin-top: 16px;
+}
