@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   PF.render.init(document.getElementById("board"));
   PF.ui.init();
 
@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!state || state.over || state.animating) return;
 
-    // В онлайн-режиме проверяем, мой ли ход
     if (PF.online && PF.online.room && !PF.online.canMakeMove()) {
       PF.audio.invalid();
       PF.ui.setMessage("Сейчас не ваш ход.");
@@ -48,5 +47,32 @@ document.addEventListener("DOMContentLoaded", () => {
   // Инициализация Supabase
   if (PF.cloud) {
     PF.cloud.init();
+    
+    // Добавь это для отладки
+    if (PF.cloud.ready) {
+      console.log("Supabase ready");
+      
+      // Слушаем изменения состояния авторизации
+      PF.cloud.client.auth.onAuthStateChange(async (event, session) => {
+        console.log("Auth state changed:", event);
+        
+        if (event === "SIGNED_IN" && session) {
+          console.log("User signed in:", session.user);
+          
+          // Создаём или получаем профиль
+          try {
+            const profile = await PF.cloud.getOrCreateProfile();
+            console.log("Profile loaded:", profile);
+            
+            // Показываем главное меню
+            if (PF.ui) {
+              PF.ui.showMenu();
+            }
+          } catch (e) {
+            console.error("Error loading profile:", e);
+          }
+        }
+      });
+    }
   }
 });
