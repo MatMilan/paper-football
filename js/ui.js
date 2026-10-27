@@ -64,7 +64,19 @@ PF.ui = {
       closeStats: document.getElementById("closeStats"),
 
       goalOverlay: document.getElementById("goalOverlay"),
-      goalText: document.getElementById("goalText")
+      goalText: document.getElementById("goalText"),
+
+      onlineBtn: document.getElementById("onlineBtn"),
+      onlineScreen: document.getElementById("onlineScreen"),
+      onlineMenu: document.getElementById("onlineMenu"),
+      waitingRoom: document.getElementById("waitingRoom"),
+      roomCodeDisplay: document.getElementById("roomCodeDisplay"),
+      roomCodeInput: document.getElementById("roomCodeInput"),
+      onlineError: document.getElementById("onlineError"),
+      backToAuthBtn: document.getElementById("backToAuthBtn"),
+      createRoomBtn: document.getElementById("createRoomBtn"),
+      joinRoomBtn: document.getElementById("joinRoomBtn"),
+      cancelRoomBtn: document.getElementById("cancelRoomBtn")
     };
   },
 
@@ -348,7 +360,43 @@ PF.ui = {
     this.els.logoutBtn.addEventListener("click", () => {
       PF.game.logout();
     });
+    // Онлайн-режим
+    const onlineBtn = document.getElementById("onlineBtn");
+    if (onlineBtn) {
+      onlineBtn.addEventListener("click", () => {
+        this.showOnlineScreen();
+      });
+    }
+
+    const createRoomBtn = document.getElementById("createRoomBtn");
+    if (createRoomBtn) {
+      createRoomBtn.addEventListener("click", async () => {
+        await this.createRoom();
+      });
+    }
+
+    const joinRoomBtn = document.getElementById("joinRoomBtn");
+    if (joinRoomBtn) {
+      joinRoomBtn.addEventListener("click", async () => {
+        await this.joinRoom();
+      });
+    }
+
+    const cancelRoomBtn = document.getElementById("cancelRoomBtn");
+    if (cancelRoomBtn) {
+      cancelRoomBtn.addEventListener("click", () => {
+        this.cancelRoom();
+      });
+    }
+
+    const backToAuthBtn = document.getElementById("backToAuthBtn");
+    if (backToAuthBtn) {
+      backToAuthBtn.addEventListener("click", () => {
+        this.showAuth();
+      });
+    }
   },
+  
   updateCloudStatus() {
     if (!this.els.cloudStatus) return;
 
@@ -434,5 +482,64 @@ PF.ui = {
     } catch (e) {
       wrap.innerHTML = `<p class="error">Ошибка загрузки лидеров: ${this.escape(e.message)}</p>`;
     }
+  },
+  showOnlineScreen() {
+    this.els.authScreen.classList.add("hidden");
+    this.els.onlineScreen.classList.remove("hidden");
+    this.els.onlineMenu.classList.remove("hidden");
+    this.els.waitingRoom.classList.add("hidden");
+    this.els.onlineError.textContent = "";
+  },
+
+  async createRoom() {
+    const profile = PF.cloud.currentProfile;
+    if (!profile) {
+      this.els.onlineError.textContent = "Нужно войти в облачный профиль.";
+      return;
+    }
+
+    try {
+      this.els.onlineError.textContent = "Создание комнаты...";
+      const room = await PF.online.createRoom(profile.name);
+    
+      this.els.onlineMenu.classList.add("hidden");
+      this.els.waitingRoom.classList.remove("hidden");
+      this.els.roomCodeDisplay.textContent = room.room_code;
+    } catch (e) {
+      this.els.onlineError.textContent = e.message;
+    }
+  },
+
+  async joinRoom() {
+    const profile = PF.cloud.currentProfile;
+    if (!profile) {
+      this.els.onlineError.textContent = "Нужно войти в облачный профиль.";
+      return;
+    }
+
+    const code = this.els.roomCodeInput.value.trim().toUpperCase();
+    if (!code) {
+      this.els.onlineError.textContent = "Введите код комнаты.";
+      return;
+    }
+
+    try {
+      this.els.onlineError.textContent = "Подключение...";
+      const room = await PF.online.joinRoom(code, profile.name);
+    
+      this.els.onlineScreen.classList.add("hidden");
+      this.els.app.classList.remove("hidden");
+    
+      PF.game.startOnlineMatch(room);
+    } catch (e) {
+      this.els.onlineError.textContent = e.message;
+    }
+  },
+
+  cancelRoom() {
+    PF.online.leaveRoom();
+    this.els.onlineMenu.classList.remove("hidden");
+    this.els.waitingRoom.classList.add("hidden");
+    this.els.onlineError.textContent = "";
   }
 };
