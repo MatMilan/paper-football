@@ -435,5 +435,5 @@ PF.ui = {
     } catch (e) {
       wrap.innerHTML = `<p class="error">Ошибка загрузки лидеров: ${this.escape(e.message)}</p>`;
     }
-  },
+  }
 };
