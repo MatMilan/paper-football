@@ -1,21 +1,10 @@
-/*
-  Облачный модуль на Supabase.
-  Отвечает за:
-  - профили игроков;
-  - авторизацию имя + PIN;
-  - рейтинг Эло;
-  - облачную статистику;
-  - сохранение матчей;
-  - таблицу лидеров.
-*/
-
 PF.cloud = {
-  // ВСТАВЬ СЮДА СВОИ ДАННЫЕ
   url: "https://xugxqthgpbnzcebbhsxc.supabase.co",
-  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Z3hxdGhncGJuemNlYmJoc3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMjIwODAsImV4cCI6MjEwODU5ODA4MH0.zzBSHscadS-Q3roJg7kNPUhc4QR_PXjlvT6xtwP_yhE",
-
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Z3hxdGhncGJuemNlYmJoc3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMjIwODAsImV4cCI6MjEwODU5ODA4MH0.zzBSHscadS-Q3roJg7kNPUhc4QR_PXjlvT6xtwP_yhE", 
+  
   client: null,
   ready: false,
+  currentProfile: null,
 
   init() {
     if (this.ready) return;
@@ -27,165 +16,147 @@ PF.cloud = {
       this.anonKey.includes("PASTE_YOUR_SUPABASE_ANON_KEY");
 
     if (hasPlaceholder || !window.supabase) {
-      console.warn("Supabase: placeholders or library not found");
       this.ready = false;
       return;
     }
 
     try {
-      console.log("Initializing Supabase with URL:", this.url);
-      console.log("Key starts with:", this.anonKey.substring(0, 20));
-    
       this.client = window.supabase.createClient(this.url, this.anonKey);
       this.ready = true;
-      console.log("Supabase initialized successfully");
     } catch (e) {
       console.error("Supabase init error:", e);
       this.ready = false;
     }
   },
 
-  statusText() {
-    return this.ready
-      ? "Supabase подключен: можно использовать облачную статистику."
-      : "Supabase не настроен: будет локальная статистика.";
+  async signInWithGoogle() {
+    if (!this.ready) throw new Error("Supabase не подключен.");
+
+    const { data, error } = await this.client.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin
+      }
+    });
+
+    if (error) throw error;
+    return data;
   },
 
-  /*
-    Простая хэш-функция для PIN.
-    На GitHub Pages будет работать через crypto.subtle.
-    Если открываешь через file:// и защищенного контекста нет,
-    используется запасной небезопасный хэш только для локального теста.
-  */
-  async hashPin(name, pin) {
-    const text = `${String(name).toLowerCase()}:${String(pin)}`;
+  async signInWithEmail(email, password) {
+    if (!this.ready) throw new Error("Supabase не подключен.");
 
-    if (window.crypto && window.crypto.subtle) {
-      const data = new TextEncoder().encode(text);
-      const digest = await window.crypto.subtle.digest("SHA-256", data);
+    const { data, error } = await this.client.auth.signInWithPassword({
+      email,
+      password
+    });
 
-      return Array.from(new Uint8Array(digest))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-    }
-
-    return `insecure:${this.simpleHash(text)}`;
+    if (error) throw error;
+    return data;
   },
 
-  simpleHash(str) {
-    let hash = 5381;
+  async signUpWithEmail(email, password, displayName) {
+    if (!this.ready) throw new Error("Supabase не подключен.");
 
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
-    }
+    const { data, error } = await this.client.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name: displayName }
+      }
+    });
 
-    return (hash >>> 0).toString(16);
+    if (error) throw error;
+    return data;
   },
 
-  /*
-    Вход или автоматическая регистрация профиля.
-    Если имя не занято — создаем профиль.
-    Если имя занято — проверяем PIN.
-  */
-  async loginOrRegister(name, pin) {
-    if (!this.ready) {
-      throw new Error("Облако не настроено.");
-    }
+  async signOut() {
+    if (!this.ready) return;
 
-    const cleanName = String(name || "").trim();
-    const cleanPin = String(pin || "").trim();
+    await this.client.auth.signOut();
+    this.currentProfile = null;
+  },
 
-    if (cleanName.length < 2) {
-      throw new Error("Имя игрока должно содержать минимум 2 символа.");
-    }
+  async getCurrentSession() {
+    if (!this.ready) return null;
 
-    if (cleanPin.length < 4) {
-      throw new Error("PIN должен содержать минимум 4 символа.");
-    }
+    const { data: { session } } = await this.client.auth.getSession();
+    return session;
+  },
 
-    const pinHash = await this.hashPin(cleanName, cleanPin);
+  async getOrCreateProfile() {
+    const session = await this.getCurrentSession();
+    if (!session?.user) return null;
 
-    const { data: existing, error: findError } = await this.client
+    const userId = session.user.id;
+    const email = session.user.email;
+    const displayName = session.user.user_metadata?.display_name || 
+                       session.user.user_metadata?.full_name ||
+                       email?.split("@")[0] || "Игрок";
+
+    let { data: profile, error: selectError } = await this.client
       .from("profiles")
       .select("*")
-      .ilike("display_name", cleanName)
-      .maybeSingle();
-
-    if (findError) {
-      throw new Error(findError.message);
-    }
-
-    if (existing) {
-      if (existing.pin_hash !== pinHash) {
-        throw new Error(`Неверный PIN для игрока «${cleanName}».`);
-      }
-
-      return existing;
-    }
-
-    const { data: created, error: insertError } = await this.client
-      .from("profiles")
-      .insert({
-        display_name: cleanName,
-        pin_hash: pinHash
-      })
-      .select()
+      .eq("user_id", userId)
       .single();
 
-    if (insertError) {
-      throw new Error(
-        `Не удалось создать профиль. Возможно, имя уже занято. (${insertError.message})`
-      );
+    if (selectError && selectError.code !== "PGRST116") {
+      console.error("Select profile error:", selectError);
     }
 
-    return created;
+    if (!profile) {
+      const { data: newProfile, error: insertError } = await this.client
+        .from("profiles")
+        .insert({
+          user_id: userId,
+          display_name: displayName,
+          email: email
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+      profile = newProfile;
+    }
+
+    this.currentProfile = profile;
+    return profile;
   },
 
   async getProfileById(id) {
-    if (!this.ready) {
-      throw new Error("Облако не настроено.");
-    }
+    if (!this.ready || !id) return null;
 
     const { data, error } = await this.client
       .from("profiles")
       .select("*")
       .eq("id", id)
-      .maybeSingle();
+      .single();
 
-    if (error) {
-      throw new Error(error.message);
-    }
-
+    if (error) return null;
     return data;
   },
 
-  async fetchLeaders() {
-    if (!this.ready) {
-      throw new Error("Облако не настроено.");
-    }
+  async getLeaderboard() {
+    if (!this.ready) return [];
 
     const { data, error } = await this.client
       .from("profiles")
-      .select("*")
+      .select("id, display_name, rating, games, wins, draws, losses, goals_for, goals_against")
       .order("rating", { ascending: false })
-      .order("wins", { ascending: false })
-      .order("games", { ascending: false })
       .limit(50);
 
     if (error) {
-      throw new Error(error.message);
+      console.error("Leaderboard error:", error);
+      return [];
     }
 
     return data || [];
   },
 
-  eloExpected(myRating, opponentRating) {
-    return 1 / (1 + Math.pow(10, (opponentRating - myRating) / 400));
+  eloExpected(ratingA, ratingB) {
+    return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
   },
 
-  /*
-    Отправляет результат матча в облако и обновляет рейтинг.
-  */
   async syncMatch(state) {
     if (!this.ready) return;
     if (!state) return;
@@ -205,7 +176,7 @@ PF.cloud = {
     try {
       const isDraw = result.type === "draw";
 
-      // Сценарий 1: Игра против ИИ (p2Cloud отсутствует)
+      // Сценарий 1: Игра против ИИ
       if (p1Cloud?.id && !p2Cloud?.id) {
         const p1 = await this.getProfileById(p1Cloud.id);
         if (!p1) throw new Error("Профиль Игрока 1 не найден.");
@@ -226,14 +197,14 @@ PF.cloud = {
 
         await this.client.from("matches").insert({
           player1_profile_id: p1.id,
-          player2_profile_id: null, // ИИ
+          player2_profile_id: null,
           winner_profile_id: result.winner === 1 ? p1.id : null,
           is_draw: isDraw,
           score: result,
           events: state.events || []
         });
 
-      // Сценарий 2: Игра PvP (оба в облаке)
+      // Сценарий 2: PvP
       } else if (p1Cloud?.id && p2Cloud?.id) {
         const p1 = await this.getProfileById(p1Cloud.id);
         const p2 = await this.getProfileById(p2Cloud.id);
@@ -264,7 +235,7 @@ PF.cloud = {
         }
 
         if (result.type === "goal") {
-            if (result.winner === 1) {
+          if (result.winner === 1) {
             update1.goals_for = p1.goals_for + 1;
             update2.goals_against = p2.goals_against + 1;
           } else {
