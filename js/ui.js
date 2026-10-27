@@ -349,7 +349,7 @@ PF.ui = {
     this.els.logoutBtn.addEventListener("click", () => {
       PF.game.logout();
     });
-  }
+  },
   updateCloudStatus() {
     if (!this.els.cloudStatus) return;
 
