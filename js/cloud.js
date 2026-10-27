@@ -12,7 +12,7 @@
 PF.cloud = {
   // ВСТАВЬ СЮДА СВОИ ДАННЫЕ
   url: "https://xugxqthgpbnzcebbhsxc.supabase.co",
-  anonKey: "sb_publishable_WrlAmEpnORirIcxYGIlxvA_59T5cjhF",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Z3hxdGhncGJuemNlYmJoc3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMjIwODAsImV4cCI6MjEwODU5ODA4MH0.zzBSHscadS-Q3roJg7kNPUhc4QR_PXjlvT6xtwP_yhE",
 
   client: null,
   ready: false,
@@ -190,131 +190,106 @@ PF.cloud = {
     const p1Cloud = state.cloud?.p1;
     const p2Cloud = state.cloud?.p2;
 
-    if (!p1Cloud?.id || !p2Cloud?.id) return;
+    if (!p1Cloud?.id && !p2Cloud?.id) return;
 
     const result = state.result;
-
-    if (!result || (result.type !== "goal" && result.type !== "draw")) {
-      return;
-    }
+    if (!result || (result.type !== "goal" && result.type !== "draw")) return;
 
     state.cloudSyncing = true;
 
     try {
-      const p1 = await this.getProfileById(p1Cloud.id);
-      const p2 = await this.getProfileById(p2Cloud.id);
-
-      if (!p1 || !p2) {
-        throw new Error("Профиль игрока не найден в облаке.");
-      }
-
       const isDraw = result.type === "draw";
 
-      const score1 = isDraw ? 0.5 : result.winner === 1 ? 1 : 0;
-      const score2 = isDraw ? 0.5 : result.winner === 2 ? 1 : 0;
+      // Сценарий 1: Игра против ИИ (p2Cloud отсутствует)
+      if (p1Cloud?.id && !p2Cloud?.id) {
+        const p1 = await this.getProfileById(p1Cloud.id);
+        if (!p1) throw new Error("Профиль Игрока 1 не найден.");
 
-      const expected1 = this.eloExpected(p1.rating, p2.rating);
-      const expected2 = this.eloExpected(p2.rating, p1.rating);
+        const update1 = { games: p1.games + 1 };
 
-      const K = 32;
-
-      const newRating1 = Math.max(
-        100,
-        Math.round(p1.rating + K * (score1 - expected1))
-      );
-
-      const newRating2 = Math.max(
-        100,
-        Math.round(p2.rating + K * (score2 - expected2))
-      );
-
-      const update1 = {
-        rating: newRating1,
-        games: p1.games + 1
-      };
-
-      const update2 = {
-        rating: newRating2,
-        games: p2.games + 1
-      };
-
-      if (isDraw) {
-        update1.draws = p1.draws + 1;
-        update2.draws = p2.draws + 1;
-      } else if (score1 === 1) {
-        update1.wins = p1.wins + 1;
-        update2.losses = p2.losses + 1;
-      } else {
-        update1.losses = p1.losses + 1;
-        update2.wins = p2.wins + 1;
-      }
-
-      if (result.type === "goal") {
-        if (result.winner === 1) {
+        if (isDraw) {
+          update1.draws = p1.draws + 1;
+        } else if (result.winner === 1) {
+          update1.wins = p1.wins + 1;
           update1.goals_for = p1.goals_for + 1;
-          update2.goals_against = p2.goals_against + 1;
         } else {
+          update1.losses = p1.losses + 1;
           update1.goals_against = p1.goals_against + 1;
-          update2.goals_for = p2.goals_for + 1;
         }
-      }
 
-      const { error: updateError1 } = await this.client
-        .from("profiles")
-        .update(update1)
-        .eq("id", p1.id);
+        await this.client.from("profiles").update(update1).eq("id", p1.id);
 
-      if (updateError1) {
-        throw new Error(updateError1.message);
-      }
-
-      const { error: updateError2 } = await this.client
-        .from("profiles")
-        .update(update2)
-        .eq("id", p2.id);
-
-      if (updateError2) {
-        throw new Error(updateError2.message);
-      }
-
-      const { error: matchError } = await this.client
-        .from("matches")
-        .insert({
+        await this.client.from("matches").insert({
           player1_profile_id: p1.id,
-          player2_profile_id: p2.id,
-          winner_profile_id:
-            result.type === "goal"
-              ? result.winner === 1
-                ? p1.id
-                : p2.id
-              : null,
+          player2_profile_id: null, // ИИ
+          winner_profile_id: result.winner === 1 ? p1.id : null,
           is_draw: isDraw,
           score: result,
           events: state.events || []
         });
 
-      if (matchError) {
-        throw new Error(matchError.message);
+      // Сценарий 2: Игра PvP (оба в облаке)
+      } else if (p1Cloud?.id && p2Cloud?.id) {
+        const p1 = await this.getProfileById(p1Cloud.id);
+        const p2 = await this.getProfileById(p2Cloud.id);
+        if (!p1 || !p2) throw new Error("Профиль не найден.");
+
+        const score1 = isDraw ? 0.5 : result.winner === 1 ? 1 : 0;
+        const score2 = isDraw ? 0.5 : result.winner === 2 ? 1 : 0;
+
+        const expected1 = this.eloExpected(p1.rating, p2.rating);
+        const expected2 = this.eloExpected(p2.rating, p1.rating);
+        const K = 32;
+
+        const newRating1 = Math.max(100, Math.round(p1.rating + K * (score1 - expected1)));
+        const newRating2 = Math.max(100, Math.round(p2.rating + K * (score2 - expected2)));
+
+        const update1 = { rating: newRating1, games: p1.games + 1 };
+        const update2 = { rating: newRating2, games: p2.games + 1 };
+
+        if (isDraw) {
+          update1.draws = p1.draws + 1;
+          update2.draws = p2.draws + 1;
+        } else if (score1 === 1) {
+          update1.wins = p1.wins + 1;
+          update2.losses = p2.losses + 1;
+        } else {
+          update1.losses = p1.losses + 1;
+          update2.wins = p2.wins + 1;
+        }
+
+        if (result.type === "goal") {
+            if (result.winner === 1) {
+            update1.goals_for = p1.goals_for + 1;
+            update2.goals_against = p2.goals_against + 1;
+          } else {
+            update1.goals_against = p1.goals_against + 1;
+            update2.goals_for = p2.goals_for + 1;
+          }
+        }
+
+        await this.client.from("profiles").update(update1).eq("id", p1.id);
+        await this.client.from("profiles").update(update2).eq("id", p2.id);
+
+        await this.client.from("matches").insert({
+          player1_profile_id: p1.id,
+          player2_profile_id: p2.id,
+          winner_profile_id: result.winner === 1 ? p1.id : p2.id,
+          is_draw: isDraw,
+          score: result,
+          events: state.events || []
+        });
       }
 
       state.cloudSynced = true;
 
       if (PF.history) {
-        PF.history.add(
-          state,
-          "Облако: результат матча и рейтинг сохранены.",
-          "event"
-        );
+        PF.history.add(state, "Облако: результат матча и статистика сохранены.", "event");
       }
     } catch (e) {
       console.error("Cloud sync error:", e);
-
       if (PF.history) {
-        PF.history.add(
-          state,
-          `Облако: ошибка сохранения результата (${e.message}).`,
-          "warn"
-        );
+        PF.history.add(state, `Облако: ошибка сохранения (${e.message}).`, "warn");
       }
     } finally {
       state.cloudSyncing = false;
