@@ -12,7 +12,7 @@
 PF.cloud = {
   // ВСТАВЬ СЮДА СВОИ ДАННЫЕ
   url: "https://xugxqthgpbnzcebbhsxc.supabase.co",
-  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Z3hxdGhncGJuemNlYmJoc3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMjIwODAsImV4cCI6MjEwODU5ODA4MH0.zzBSHscadS-Q3roJg7kNPUhc4QR_PXjlvT6xtwP_yhE",
+  anonKey: "sb_publishable_WrlAmEpnORirIcxYGIlxvA_59T5cjhF",
 
   client: null,
   ready: false,
