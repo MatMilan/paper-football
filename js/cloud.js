@@ -23,8 +23,8 @@ PF.cloud = {
     const hasPlaceholder =
       !this.url ||
       !this.anonKey ||
-      this.url.includes("https://xugxqthgpbnzcebbhsxc.supabase.co") ||
-      this.anonKey.includes("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1Z3hxdGhncGJuemNlYmJoc3hjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMwMjIwODAsImV4cCI6MjEwODU5ODA4MH0.zzBSHscadS-Q3roJg7kNPUhc4QR_PXjlvT6xtwP_yhE");
+      this.url.includes("PASTE_YOUR_SUPABASE_URL") ||
+      this.anonKey.includes("PASTE_YOUR_SUPABASE_ANON_KEY");
 
     if (hasPlaceholder || !window.supabase) {
       this.ready = false;
