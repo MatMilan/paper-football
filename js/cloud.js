@@ -27,13 +27,18 @@ PF.cloud = {
       this.anonKey.includes("PASTE_YOUR_SUPABASE_ANON_KEY");
 
     if (hasPlaceholder || !window.supabase) {
+      console.warn("Supabase: placeholders or library not found");
       this.ready = false;
       return;
     }
 
     try {
+      console.log("Initializing Supabase with URL:", this.url);
+      console.log("Key starts with:", this.anonKey.substring(0, 20));
+    
       this.client = window.supabase.createClient(this.url, this.anonKey);
       this.ready = true;
+      console.log("Supabase initialized successfully");
     } catch (e) {
       console.error("Supabase init error:", e);
       this.ready = false;
