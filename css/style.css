@@ -16,8 +16,7 @@
   box-sizing: border-box;
 }
 
-html,
-body {
+html, body {
   margin: 0;
   padding: 0;
 }
@@ -35,6 +34,8 @@ body {
   display: none !important;
 }
 
+/* ==================== ОВЕРЛЕИ ==================== */
+
 .overlay {
   position: fixed;
   inset: 0;
@@ -45,6 +46,7 @@ body {
   padding: 16px;
   background: rgba(5, 8, 12, 0.58);
   backdrop-filter: blur(5px);
+  overflow-y: auto;
 }
 
 .card {
@@ -54,7 +56,14 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 20px;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.38);
-  padding: 20px;
+  padding: 24px;
+}
+
+/* ==================== АВТОРИЗАЦИЯ ==================== */
+
+.auth-card {
+  max-width: 480px;
+  text-align: center;
 }
 
 .auth-card h1 {
@@ -62,22 +71,42 @@ body {
   font-size: 28px;
 }
 
-.auth-card p {
-  margin-top: 0;
+.auth-card > p {
+  margin: 0 0 20px;
 }
 
-.muted {
+.auth-buttons {
+  margin: 20px 0;
+}
+
+.auth-buttons button {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.divider {
   color: var(--muted);
+  font-size: 14px;
+  margin: 16px 0;
 }
 
-label {
+#emailAuthForm {
+  text-align: left;
+}
+
+#emailAuthForm label {
   display: block;
-  margin: 14px 0;
+  margin: 12px 0;
   color: #dbe2ea;
   font-size: 14px;
 }
 
-input {
+#emailAuthForm input {
   width: 100%;
   margin-top: 6px;
   padding: 12px 13px;
@@ -86,9 +115,10 @@ input {
   background: rgba(255, 255, 255, 0.06);
   color: var(--text);
   outline: none;
+  font-size: 15px;
 }
 
-input:focus {
+#emailAuthForm input:focus {
   border-color: rgba(255, 213, 79, 0.65);
   box-shadow: 0 0 0 3px rgba(255, 213, 79, 0.12);
 }
@@ -97,17 +127,22 @@ input:focus {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 18px;
+  margin-top: 16px;
+}
+
+.row button {
+  flex: 1;
 }
 
 button {
   border: 0;
   border-radius: 12px;
-  padding: 10px 13px;
+  padding: 12px 16px;
   background: #39404d;
   color: var(--text);
   cursor: pointer;
   font-weight: 600;
+  font-size: 14px;
   transition: transform 0.12s ease, opacity 0.12s ease, background 0.12s ease;
 }
 
@@ -132,6 +167,262 @@ button.primary {
   color: #ff9c9c;
   font-size: 14px;
 }
+
+.muted {
+  color: var(--muted);
+}
+
+/* ==================== ГЛАВНОЕ МЕНЮ ==================== */
+
+.menu-card {
+  max-width: 520px;
+}
+
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.menu-header h2 {
+  margin: 0;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  background: rgba(255, 213, 79, 0.15);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.user-badge.guest {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+}
+
+.user-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.menu-buttons {
+  display: grid;
+  gap: 12px;
+}
+
+.menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.menu-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menu-btn .icon {
+  font-size: 24px;
+}
+
+.menu-btn .text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-btn .text strong {
+  font-size: 15px;
+}
+
+.menu-btn .text small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.menu-btn.online-btn {
+  border-color: rgba(93, 155, 255, 0.3);
+}
+
+.menu-btn.logout-btn {
+  opacity: 0.7;
+}
+
+/* ==================== PvP НАСТРОЙКА ==================== */
+
+#pvpSetupScreen .card {
+  max-width: 480px;
+}
+
+#pvpSetupScreen h2 {
+  margin-top: 0;
+}
+
+#pvpSetupForm label {
+  display: block;
+  margin: 14px 0;
+  color: #dbe2ea;
+  font-size: 14px;
+}
+
+#pvpSetupForm input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  outline: none;
+}
+
+/* ==================== ОНЛАЙН ==================== */
+
+.online-card {
+  max-width: 600px;
+}
+
+.online-card h2 {
+  margin-top: 0;
+}
+
+#onlineTabs {
+  display: flex;
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--panel-2);
+  border: 1px solid transparent;
+}
+
+.tab-btn.active {
+  background: rgba(255, 213, 79, 0.15);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tab-content {
+  min-height: 200px;
+}
+
+.rooms-list {
+  display: grid;
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.room-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: var(--panel-2);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.room-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.room-host {
+  font-weight: 700;
+}
+
+.room-code {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.join-btn {
+  padding: 8px 16px;
+  background: var(--p2);
+  color: #fff;
+}
+
+#createRoomForm label,
+#joinRoomForm label {
+  display: block;
+  margin: 14px 0;
+  color: #dbe2ea;
+  font-size: 14px;
+}
+
+#createRoomForm input[type="text"],
+#joinRoomForm input[type="text"],
+#roomCodeInput,
+#joinCodeInput {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px 13px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  outline: none;
+  text-transform: uppercase;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0;
+  color: #dbe2ea;
+  font-size: 14px;
+}
+
+.checkbox-row input {
+  width: auto;
+  margin: 0;
+}
+
+#waitingRoom {
+  text-align: center;
+  padding: 30px 0;
+}
+
+#waitingRoom h3 {
+  margin: 0 0 16px;
+}
+
+#waitingRoomCode {
+  font-size: 28px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+
+.back-btn {
+  margin-top: 20px;
+  width: 100%;
+}
+
+/* ==================== ИГРОВОЙ ЭКРАН ==================== */
 
 .app {
   width: min(1180px, calc(100vw - 12px));
@@ -321,6 +612,8 @@ canvas {
   color: var(--muted);
 }
 
+/* ==================== ОВЕРЛЕЙ ГОЛА ==================== */
+
 .goal-overlay {
   position: fixed;
   inset: 0;
@@ -363,6 +656,8 @@ canvas {
   }
 }
 
+/* ==================== МОДАЛКИ ==================== */
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -376,7 +671,8 @@ canvas {
   font-size: 22px;
 }
 
-#closeStats {
+#closeStats,
+#closeReplays {
   width: 38px;
   height: 38px;
   border-radius: 50%;
@@ -384,8 +680,10 @@ canvas {
   line-height: 1;
 }
 
-#statsTableWrap {
+#statsTableWrap,
+#replaysList {
   overflow: auto;
+  max-height: 60vh;
 }
 
 .stats-table {
@@ -407,46 +705,50 @@ canvas {
   font-weight: 700;
 }
 
-@media (max-width: 900px) {
-  .main {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .history-panel {
-    width: min(94vw, 560px);
-    max-height: 220px;
-  }
-
-  .player-chip {
-    max-width: min(34vw, 150px);
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .controls {
-    gap: 6px;
-  }
-
-  button {
-    padding: 9px 10px;
-    font-size: 13px;
-  }
+.saved-list {
+  display: grid;
+  gap: 10px;
 }
 
-.checkbox-row {
+.saved-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin: 14px 0;
-  color: #dbe2ea;
-  font-size: 14px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.checkbox-row input {
-  width: auto;
-  margin: 0;
+.saved-item .meta {
+  min-width: 0;
 }
+
+.saved-item .title {
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-item .sub {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-item .actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+/* ==================== ПАНЕЛЬ ПОВТОРА ==================== */
+
 .replay-bar {
   position: fixed;
   left: 50%;
@@ -489,137 +791,40 @@ canvas {
   pointer-events: none;
 }
 
-.saved-list {
-  display: grid;
-  gap: 10px;
-  max-height: 62vh;
-  overflow: auto;
-  padding-right: 4px;
-}
+/* ==================== АДАПТИВНОСТЬ ==================== */
 
-.saved-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 11px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
+@media (max-width: 900px) {
+  .main {
+    flex-direction: column;
+    align-items: center;
+  }
 
-.saved-item .meta {
-  min-width: 0;
-}
+  .history-panel {
+    width: min(94vw, 560px);
+    max-height: 220px;
+  }
 
-.saved-item .title {
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .player-chip {
+    max-width: min(34vw, 150px);
+    padding: 8px 10px;
+    font-size: 13px;
+  }
 
-.saved-item .sub {
-  margin-top: 3px;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+  .controls {
+    gap: 6px;
+  }
 
-.saved-item .actions {
-  display: flex;
-  gap: 6px;
-  flex: 0 0 auto;
-}
+  .controls button {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
 
-.replays-card {
-  max-width: 680px;
-}
-.cloud-auth-box {
-  margin-top: 16px;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
+  .card {
+    padding: 18px;
+  }
 
-.cloud-title {
-  font-weight: 800;
-  margin-bottom: 8px;
-}
-
-.leaders-card {
-  max-width: 760px;
-}
-
-.leaders-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-.leaders-table th,
-.leaders-table td {
-  padding: 9px 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  text-align: left;
-  white-space: nowrap;
-}
-
-.leaders-table th {
-  color: var(--muted);
-  font-weight: 700;
-}
-.online-card {
-  max-width: 480px;
-  text-align: center;
-}
-
-.online-card h2 {
-  margin-top: 0;
-}
-
-#onlineMenu {
-  display: grid;
-  gap: 12px;
-  margin: 20px 0;
-}
-
-.divider {
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.join-row {
-  display: flex;
-  gap: 8px;
-}
-
-.join-row input {
-  flex: 1;
-  text-transform: uppercase;
-  text-align: center;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-}
-
-#waitingRoom {
-  margin: 20px 0;
-}
-
-#waitingRoom p {
-  margin: 10px 0;
-}
-
-#roomCodeDisplay {
-  font-size: 24px;
-  letter-spacing: 0.15em;
-  color: var(--accent);
-}
-
-#backToAuthBtn {
-  margin-top: 16px;
+  .menu-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
