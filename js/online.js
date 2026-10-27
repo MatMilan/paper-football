@@ -1,19 +1,11 @@
 PF.online = {
   room: null,
   subscription: null,
+  roomsSubscription: null,
   isHost: false,
   myPlayerNumber: null,
 
-  generateRoomCode() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    let code = "";
-    for (let i = 0; i < 6; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return code;
-  },
-
-  async createRoom(playerName) {
+  async createRoom(roomCode, isPrivate, playerName) {
     if (!PF.cloud || !PF.cloud.ready) {
       throw new Error("Supabase не подключен.");
     }
@@ -23,7 +15,23 @@ PF.online = {
       throw new Error("Нужно войти в облачный профиль.");
     }
 
-    const roomCode = this.generateRoomCode();
+    const code = roomCode.toUpperCase().trim();
+
+    if (code.length < 3 || code.length > 10) {
+      throw new Error("Код должен быть от 3 до 10 символов.");
+    }
+
+    // Проверяем, что код уникален
+    const { data: existing } = await PF.cloud.client
+      .from("rooms")
+      .select("id")
+      .eq("room_code", code)
+      .eq("status", "waiting")
+      .maybeSingle();
+
+    if (existing) {
+      throw new Error("Такой код уже используется. Придумайте другой.");
+    }
 
     const initialState = {
       players: { 1: playerName, 2: null },
@@ -56,11 +64,12 @@ PF.online = {
       const { data, error } = await PF.cloud.client
         .from("rooms")
         .insert({
-          room_code: roomCode,
+          room_code: code,
           host_profile_id: profile.id,
           host_name: playerName,
           state: initialState,
           status: "waiting",
+          is_private: isPrivate,
           current_player: initialState.currentPlayer
         })
         .select()
@@ -77,7 +86,7 @@ PF.online = {
       return data;
     } catch (e) {
       console.error("Create room error:", e);
-      throw new Error("Не удалось создать комнату.");
+      throw new Error(e.message || "Не удалось создать комнату.");
     }
   },
 
@@ -91,14 +100,16 @@ PF.online = {
       throw new Error("Нужно войти в облачный профиль.");
     }
 
+    const code = roomCode.toUpperCase().trim();
+
     try {
       const { data: room, error: findError } = await PF.cloud.client
         .from("rooms")
         .select("*")
-        .eq("room_code", roomCode.toUpperCase())
+        .eq("room_code", code)
         .eq("status", "waiting")
         .is("guest_profile_id", null)
-        .single();
+        .maybeSingle();
 
       if (findError || !room) {
         throw new Error("Комната не найдена или уже занята.");
@@ -133,6 +144,26 @@ PF.online = {
     }
   },
 
+  async getOpenRooms() {
+    if (!PF.cloud || !PF.cloud.ready) return [];
+
+    const { data, error } = await PF.cloud.client
+      .from("rooms")
+      .select("*")
+      .eq("status", "waiting")
+      .eq("is_private", false)
+      .is("guest_profile_id", null)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error("Get rooms error:", error);
+      return [];
+    }
+
+    return data || [];
+  },
+
   subscribeToRoom() {
     if (!this.room || !PF.cloud.client) return;
 
@@ -153,6 +184,34 @@ PF.online = {
         }
       )
       .subscribe();
+  },
+
+  subscribeToRoomsList(callback) {
+    if (!PF.cloud.client) return;
+
+    this.unsubscribeFromRoomsList();
+
+    this.roomsSubscription = PF.cloud.client
+      .channel("rooms-list")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "rooms"
+        },
+        () => {
+          if (callback) callback();
+        }
+      )
+      .subscribe();
+  },
+
+  unsubscribeFromRoomsList() {
+    if (this.roomsSubscription) {
+      PF.cloud.client.removeChannel(this.roomsSubscription);
+      this.roomsSubscription = null;
+    }
   },
 
   unsubscribe() {
