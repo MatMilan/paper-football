@@ -39,6 +39,52 @@
     PF.ui.setMessage("Игра началась.");
     this.startTurn(this.state.currentPlayer, "simple");
   },
+  startOnlineMatch(room) {
+    const state = room.state;
+
+    this.state = PF.state.create(state.players);
+
+    this.state.currentPlayer = state.currentPlayer;
+    this.state.phase = state.phase;
+    this.state.ball = PF.geo.clone(state.ball);
+    this.state.displayBall = PF.geo.clone(state.displayBall);
+    this.state.turnStartBall = PF.geo.clone(state.turnStartBall);
+    this.state.path = state.path.map(p => PF.geo.clone(p));
+    this.state.visited = new Set(state.visited);
+    this.state.segments = state.segments.map(s => ({
+      a: PF.geo.clone(s.a),
+      b: PF.geo.clone(s.b),
+      player: s.player,
+      penalty: s.penalty
+    }));
+    this.state.turnSegments = state.turnSegments;
+    this.state.turnVisited = state.turnVisited;
+    this.state.events = state.events;
+    this.state.lastSegment = state.lastSegment ? {
+      a: PF.geo.clone(state.lastSegment.a),
+      b: PF.geo.clone(state.lastSegment.b),
+      player: state.lastSegment.player,
+      penalty: state.lastSegment.penalty
+    } : null;
+    this.state.trail = state.trail.map(t => ({
+      x: t.x,
+      y: t.y,
+      player: t.player
+    }));
+    this.state.history = state.history;
+
+    PF.ui.showScreen("app");
+    PF.ui.updateHUD(this.state);
+    PF.ui.updateTimer(this.state);
+    PF.render.draw(this.state);
+    PF.history.render(this.state);
+
+    this.resetTimer();
+
+    if (PF.online) {
+      PF.online.subscribeToRoom();
+    }
+  },
 
   startTurn(player, phase) {
     const s = this.state;
