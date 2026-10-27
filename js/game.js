@@ -14,7 +14,7 @@
     clearInterval(this.timerId);
 
     this.state = PF.state.create({ 1: p1, 2: p2 });
-    if (cloudProfiles && cloudProfiles.p1 && cloudProfiles.p2) {
+    if (cloudProfiles && (cloudProfiles.p1 || cloudProfiles.p2)) {
       this.state.cloud = cloudProfiles;
     }
 
@@ -25,7 +25,7 @@
       `Матч начался. Первым ходит ${this.state.players[this.state.currentPlayer]}.`,
       "event"
     );
-    if (this.state.cloud?.p1 && this.state.cloud?.p2) {
+    if (this.state.cloud?.p1 || this.state.cloud?.p2) {
       PF.history.add(
         this.state,
         "Облачная статистика включена.",
