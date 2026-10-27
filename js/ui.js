@@ -129,7 +129,9 @@ PF.ui = {
       }
     });
   },
-
+  showGame() {
+    this.showScreen("app");
+  },
   /* ==================== АВТОРИЗАЦИЯ ==================== */
 
   async checkAuthOnLoad() {
@@ -266,6 +268,17 @@ PF.ui = {
 
   bindMenu() {
     this.els.menuPvPBtn.addEventListener("click", () => {
+      // Автозаполнение имени игрока 1, если пользователь авторизован
+      if (!this.isGuest && PF.cloud.currentProfile && PF.cloud.currentProfile.display_name) {
+        this.els.pvpPlayer1Name.value = PF.cloud.currentProfile.display_name;
+      } else {
+        this.els.pvpPlayer1Name.value = "";
+      }
+  
+      // Второй игрок всегда пустой
+      this.els.pvpPlayer2Name.value = "";
+      this.els.pvpError.textContent = "";
+  
       this.showScreen("pvpSetupScreen");
       this.currentMode = "pvp";
     });
