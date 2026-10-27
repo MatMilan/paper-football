@@ -12,109 +12,193 @@
   <div id="authScreen" class="overlay">
     <div class="card auth-card">
       <h1>Футбол на бумаге</h1>
-      <p class="muted">Введите имена игроков, чтобы начать матч.</p>
+      <p class="muted">Добро пожаловать! Выбери способ входа.</p>
 
-      <form id="authForm">
+      <div class="auth-buttons">
+        <button id="googleAuthBtn" class="primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" style="vertical-align: middle; margin-right: 8px;">
+            <path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#fff" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#fff" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#fff" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Войти через Google
+        </button>
+      </div>
+
+      <div class="divider">или</div>
+
+      <form id="emailAuthForm">
+        <label>
+          Email
+          <input type="email" id="emailInput" autocomplete="email" placeholder="your@email.com" />
+        </label>
+
+        <label>
+          Пароль
+          <input type="password" id="passwordInput" autocomplete="current-password" placeholder="••••••••" />
+        </label>
+
+        <div class="row">
+          <button type="submit" id="emailLoginBtn">Войти</button>
+          <button type="button" id="emailSignupBtn">Регистрация</button>
+        </div>
+      </form>
+
+      <div class="divider">или</div>
+
+      <button id="guestBtn">Играть как гость</button>
+
+      <div id="authError" class="error"></div>
+    </div>
+  </div>
+
+  <!-- Главное меню -->
+  <div id="menuScreen" class="overlay hidden">
+    <div class="card menu-card">
+      <div class="menu-header">
+        <h2>Главное меню</h2>
+        <div id="userInfo" class="user-info"></div>
+      </div>
+
+      <div class="menu-buttons">
+        <button id="menuPvPBtn" class="menu-btn">
+          <span class="icon">👥</span>
+          <span class="text">
+            <strong>Играть против друга</strong>
+            <small>Два игрока на одном устройстве</small>
+          </span>
+        </button>
+
+        <button id="menuPvCBtn" class="menu-btn">
+          <span class="icon">🤖</span>
+          <span class="text">
+            <strong>Играть против компьютера</strong>
+            <small>Соревнуйся с ИИ</small>
+          </span>
+        </button>
+
+        <button id="menuOnlineBtn" class="menu-btn online-btn">
+          <span class="icon">🌐</span>
+          <span class="text">
+            <strong>Онлайн-игра</strong>
+            <small>Играй с другими игроками</small>
+          </span>
+        </button>
+
+        <button id="menuStatsBtn" class="menu-btn">
+          <span class="icon">📊</span>
+          <span class="text">
+            <strong>Статистика и рейтинг</strong>
+            <small>Таблица лидеров</small>
+          </span>
+        </button>
+
+        <button id="menuLogoutBtn" class="menu-btn logout-btn">
+          <span class="icon">🚪</span>
+          <span class="text">
+            <strong>Выход</strong>
+            <small>Сменить аккаунт</small>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Экран настройки PvP -->
+  <div id="pvpSetupScreen" class="overlay hidden">
+    <div class="card">
+      <h2>Играть против друга</h2>
+      <p class="muted">Введите имена игроков.</p>
+
+      <form id="pvpSetupForm">
         <label>
           Игрок 1 (красный)
-          <input id="player1Name" maxlength="20" autocomplete="off" list="profilesList" placeholder="Например: Андрей" />
+          <input id="pvpPlayer1Name" maxlength="20" placeholder="Имя первого игрока" />
         </label>
 
         <label>
           Игрок 2 (синий)
-          <input id="player2Name" maxlength="20" autocomplete="off" list="profilesList" placeholder="Например: Мария" />
+          <input id="pvpPlayer2Name" maxlength="20" placeholder="Имя второго игрока" />
         </label>
-        <div class="cloud-auth-box">
-          <div class="cloud-title">Облачная статистика (необязательно)</div>
-
-          <label>
-            PIN Игрока 1
-            <input id="player1Pin" type="password" maxlength="32" autocomplete="off" placeholder="Если есть облачный профиль" />
-          </label>
-
-          <label>
-            PIN Игрока 2
-            <input id="player2Pin" type="password" maxlength="32" autocomplete="off" placeholder="Если есть облачный профиль" />
-          </label>
-
-          <div id="cloudStatus" class="muted"></div>
-        </div>
-        <label class="checkbox-row">
-          <input type="checkbox" id="aiToggle" />
-          Играть против ИИ (Игрок 2)
-        </label>
-        <datalist id="profilesList"></datalist>
 
         <div class="row">
           <button type="submit" class="primary">Начать матч</button>
-          <button type="button" id="showStatsFromAuth">Статистика</button>
+          <button type="button" id="pvpBackBtn">Назад</button>
         </div>
 
-        <div id="authError" class="error"></div>
+        <div id="pvpError" class="error"></div>
       </form>
     </div>
   </div>
 
-    <!-- Онлайн режим -->
+  <!-- Онлайн экран -->
   <div id="onlineScreen" class="overlay hidden">
     <div class="card online-card">
       <h2>Онлайн-игра</h2>
-    
-      <div id="onlineMenu">
-        <button id="createRoomBtn" class="primary">Создать комнату</button>
-        <div class="divider">или</div>
-        <div class="join-row">
-          <input id="roomCodeInput" placeholder="Код комнаты" maxlength="6" />
-          <button id="joinRoomBtn">Подключиться</button>
+
+      <div id="onlineTabs">
+        <button class="tab-btn active" data-tab="rooms">Открытые комнаты</button>
+        <button class="tab-btn" data-tab="create">Создать</button>
+        <button class="tab-btn" data-tab="join">Подключиться</button>
+      </div>
+
+      <!-- Вкладка: список комнат -->
+      <div id="roomsTab" class="tab-content">
+        <div id="roomsList" class="rooms-list">
+          <p class="muted">Загрузка комнат...</p>
         </div>
       </div>
 
+      <!-- Вкладка: создать комнату -->
+      <div id="createTab" class="tab-content hidden">
+        <form id="createRoomForm">
+          <label>
+            Код комнаты (3-10 символов)
+            <input id="roomCodeInput" maxlength="10" placeholder="Например: MYGAME2024" />
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="isPrivateRoom" />
+            Приватная комната (только по коду)
+          </label>
+
+          <div class="row">
+            <button type="submit" class="primary">Создать</button>
+          </div>
+
+          <div id="createError" class="error"></div>
+        </form>
+      </div>
+
+      <!-- Вкладка: подключиться -->
+      <div id="joinTab" class="tab-content hidden">
+        <form id="joinRoomForm">
+          <label>
+            Код комнаты
+            <input id="joinCodeInput" maxlength="10" placeholder="Введите код" />
+          </label>
+
+          <div class="row">
+            <button type="submit" class="primary">Подключиться</button>
+          </div>
+
+          <div id="joinError" class="error"></div>
+        </form>
+      </div>
+
       <div id="waitingRoom" class="hidden">
-        <p>Код комнаты: <strong id="roomCodeDisplay"></strong></p>
-        <p class="muted">Ожидание второго игрока...</p>
+        <h3>Ожидание игрока...</h3>
+        <p>Код комнаты: <strong id="waitingRoomCode"></strong></p>
+        <p class="muted">Поделитесь кодом с другом</p>
         <button id="cancelRoomBtn">Отменить</button>
       </div>
 
-      <div id="onlineError" class="error"></div>
-      <button id="backToAuthBtn">Назад</button>
+      <button id="onlineBackBtn" class="back-btn">← Назад в меню</button>
     </div>
   </div>
 
-  <!-- Модальное окно статистики -->
-  <div id="statsModal" class="overlay hidden">
-    <div class="card stats-card">
-      <div class="modal-header">
-        <h2>Статистика игроков</h2>
-        <button id="closeStats" title="Закрыть">×</button>
-      </div>
-      <div id="statsTableWrap"></div>
-    </div>
-  </div>
-
-    <!-- Модальное окно сохраненных партий -->
-  <div id="replaysModal" class="overlay hidden">
-    <div class="card replays-card">
-      <div class="modal-header">
-        <h2>Сохраненные партии</h2>
-        <button id="closeReplays" title="Закрыть">×</button>
-      </div>
-
-      <div id="replaysList" class="saved-list"></div>
-    </div>
-  </div>
-    <!-- Модальное окно таблицы лидеров -->
-  <div id="leadersModal" class="overlay hidden">
-    <div class="card leaders-card">
-      <div class="modal-header">
-        <h2>Таблица лидеров</h2>
-        <button id="closeLeaders" title="Закрыть">×</button>
-      </div>
-  
-      <div id="leadersTableWrap"></div>
-    </div>
-  </div>
-
-  <!-- Игра -->
+  <!-- Игровой экран -->
   <div id="app" class="app hidden">
     <header class="topbar">
       <div class="player-chip p1" id="player1Chip">Игрок 1</div>
@@ -137,13 +221,9 @@
       <button id="offerDrawBtn">Предложить ничью</button>
       <button id="soundBtn">Звук: вкл</button>
       <button id="historyToggleBtn">История</button>
-      <button id="statsBtn">Статистика</button>
-      <button id="leadersBtn">Лидеры</button>
-      <button id="saveMatchBtn">Сохранить партию</button>
+      <button id="saveMatchBtn">Сохранить</button>
       <button id="replaysBtn">Повторы</button>
-      <button id="newMatchBtn">Новый матч</button>
-      <button id="logoutBtn">Сменить игроков</button>
-      <button id="onlineBtn">Онлайн</button>
+      <button id="backToMenuBtn">Меню</button>
     </div>
 
     <div id="message" class="message"></div>
@@ -159,6 +239,8 @@
       </aside>
     </main>
   </div>
+
+  <!-- Панель повтора -->
   <div id="replayBar" class="replay-bar hidden">
     <button id="replayExit">Выход</button>
     <button id="replayFirst">⏮</button>
@@ -169,9 +251,32 @@
     <input id="replaySlider" type="range" min="0" value="0" />
     <span id="replayInfo">0/0</span>
   </div>
+
   <!-- Оверлей гола -->
   <div id="goalOverlay" class="goal-overlay hidden">
     <div id="goalText">Гол!</div>
+  </div>
+
+  <!-- Модальное окно статистики -->
+  <div id="statsModal" class="overlay hidden">
+    <div class="card stats-card">
+      <div class="modal-header">
+        <h2>Статистика и рейтинг</h2>
+        <button id="closeStats" title="Закрыть">×</button>
+      </div>
+      <div id="statsTableWrap"></div>
+    </div>
+  </div>
+
+  <!-- Модальное окно сохраненных партий -->
+  <div id="replaysModal" class="overlay hidden">
+    <div class="card replays-card">
+      <div class="modal-header">
+        <h2>Сохраненные партии</h2>
+        <button id="closeReplays" title="Закрыть">×</button>
+      </div>
+      <div id="replaysList" class="saved-list"></div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -184,12 +289,12 @@
   <script src="js/history.js"></script>
   <script src="js/state.js"></script>
   <script src="js/render.js"></script>
+  <script src="js/cloud.js"></script>
+  <script src="js/online.js"></script>
   <script src="js/ui.js"></script>
   <script src="js/game.js"></script>
   <script src="js/ai.js"></script>
   <script src="js/replay.js"></script>
-  <script src="js/cloud.js"></script>
-  <script src="js/online.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
