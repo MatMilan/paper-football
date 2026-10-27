@@ -235,40 +235,39 @@ PF.ui = {
       const pin1 = (this.els.player1Pin?.value || "").trim();
       const pin2 = (this.els.player2Pin?.value || "").trim();
 
-      const cloud = {
-        p1: null,
-        p2: null
-      };
+      const cloud = { p1: null, p2: null };
 
-      if (!aiEnabled) {
-        if (PF.cloud && PF.cloud.ready) {
-          if (pin1 && pin2) {
-            try {
-              this.els.authError.textContent = "Проверка облачных профилей...";
-
-              cloud.p1 = await PF.cloud.loginOrRegister(p1, pin1);
-              cloud.p2 = await PF.cloud.loginOrRegister(p2, pin2);
-
-              if (cloud.p1.id === cloud.p2.id) {
-                this.els.authError.textContent =
-                  "Облачные профили игроков должны быть разными.";
-                return;
-              }
-            } catch (err) {
-              this.els.authError.textContent =
-                err.message || "Ошибка облачной авторизации.";
-              return;
-            }
-          } else if (pin1 || pin2) {
-            this.els.authError.textContent =
-              "Для облачной статистики нужно указать PIN обоих игроков или оставить оба поля пустыми.";
+      if (PF.cloud && PF.cloud.ready) {
+        // 1. Профиль Игрока 1 создается всегда, если есть PIN
+        if (pin1) {
+          try {
+            this.els.authError.textContent = "Проверка облачного профиля Игрока 1...";
+            cloud.p1 = await PF.cloud.loginOrRegister(p1, pin1);
+          } catch (err) {
+            this.els.authError.textContent = err.message || "Ошибка профиля Игрока 1.";
             return;
           }
-        } else if (pin1 || pin2) {
-          this.els.authError.textContent =
-            "Supabase не настроен. Либо вставь ключи в js/cloud.js, либо оставь поля PIN пустыми.";
-          return;
         }
+
+        // 2. Профиль Игрока 2 нужен только если играем против человека
+        if (!aiEnabled && pin2) {
+          try {
+            this.els.authError.textContent = "Проверка облачного профиля Игрока 2...";
+            cloud.p2 = await PF.cloud.loginOrRegister(p2, pin2);
+
+            if (cloud.p1 && cloud.p1.id === cloud.p2.id) {
+              this.els.authError.textContent = "Облачные профили игроков должны быть разными.";
+              return;
+            }
+          } catch (err) {
+            this.els.authError.textContent = err.message || "Ошибка профиля Игрока 2.";
+            return;
+          }
+        }
+      } else if (pin1 || pin2) {
+        this.els.authError.textContent =
+          "Supabase не настроен. Либо вставь ключи в js/cloud.js, либо оставь поля PIN пустыми.";
+        return;
       }
 
       this.els.authError.textContent = "";
@@ -291,7 +290,7 @@ PF.ui = {
 
       PF.game.startMatch(p1, p2, cloud);
 
-      if (cloud.p1 && cloud.p2) {
+      if (cloud.p1 || cloud.p2) {
         this.setMessage("Облачная статистика включена.");
       } else {
         this.setMessage("Локальный режим.");
