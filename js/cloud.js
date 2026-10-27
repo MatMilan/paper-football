@@ -94,28 +94,33 @@ PF.cloud = {
                        session.user.user_metadata?.full_name ||
                        email?.split("@")[0] || "Игрок";
 
+    // Сначала пытаемся получить существующий профиль
     let { data: profile, error: selectError } = await this.client
       .from("profiles")
       .select("*")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
-    if (selectError && selectError.code !== "PGRST116") {
+    if (selectError) {
       console.error("Select profile error:", selectError);
     }
 
+    // Если профиля нет, создаём новый
     if (!profile) {
       const { data: newProfile, error: insertError } = await this.client
         .from("profiles")
         .insert({
           user_id: userId,
-          display_name: displayName,
-          email: email
+          email: email,
+          display_name: displayName
         })
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.error("Insert profile error:", insertError);
+        throw insertError;
+      }
       profile = newProfile;
     }
 
