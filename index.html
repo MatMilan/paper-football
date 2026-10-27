@@ -55,6 +55,31 @@
     </div>
   </div>
 
+    <!-- Онлайн режим -->
+  <div id="onlineScreen" class="overlay hidden">
+    <div class="card online-card">
+      <h2>Онлайн-игра</h2>
+    
+      <div id="onlineMenu">
+        <button id="createRoomBtn" class="primary">Создать комнату</button>
+        <div class="divider">или</div>
+        <div class="join-row">
+          <input id="roomCodeInput" placeholder="Код комнаты" maxlength="6" />
+          <button id="joinRoomBtn">Подключиться</button>
+        </div>
+      </div>
+
+      <div id="waitingRoom" class="hidden">
+        <p>Код комнаты: <strong id="roomCodeDisplay"></strong></p>
+        <p class="muted">Ожидание второго игрока...</p>
+        <button id="cancelRoomBtn">Отменить</button>
+      </div>
+
+      <div id="onlineError" class="error"></div>
+      <button id="backToAuthBtn">Назад</button>
+    </div>
+  </div>
+
   <!-- Модальное окно статистики -->
   <div id="statsModal" class="overlay hidden">
     <div class="card stats-card">
@@ -163,6 +188,7 @@
   <script src="js/ai.js"></script>
   <script src="js/replay.js"></script>
   <script src="js/cloud.js"></script>
+  <script src="js/online.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
