@@ -35,7 +35,7 @@ PF.cloud = {
     const { data, error } = await this.client.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: window.location.origin
+        redirectTo: window.location.origin + window.location.pathname
       }
     });
 
