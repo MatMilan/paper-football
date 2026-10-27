@@ -1,9 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   PF.render.init(document.getElementById("board"));
   PF.ui.init();
-  if (PF.replay) {
-    PF.replay.init();
-  }
 
   const canvas = PF.render.canvas;
 
@@ -11,9 +8,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (PF.replay && PF.replay.active) {
       return;
     }
+
     const state = PF.game.state;
 
     if (!state || state.over || state.animating) return;
+
+    // В онлайн-режиме проверяем, мой ли ход
+    if (PF.online && PF.online.room && !PF.online.canMakeMove()) {
+      PF.audio.invalid();
+      PF.ui.setMessage("Сейчас не ваш ход.");
+      return;
+    }
 
     const c = PF.render.eventToCanvas(e);
     const target = PF.render.findTarget(c.x, c.y);
@@ -39,4 +44,9 @@ document.addEventListener("DOMContentLoaded", () => {
       PF.audio.ctx.resume();
     }
   });
+
+  // Инициализация Supabase
+  if (PF.cloud) {
+    PF.cloud.init();
+  }
 });
