@@ -138,6 +138,11 @@ PF.game = {
     const state = room.state;
 
     this.state = PF.state.create(state.players);
+    // Сохраняем настройки в state
+    if (room.state && room.state.settings) {
+      this.state.settings = room.state.settings;
+      this.state._settingsApplied = true;
+    }
 
     this.state.currentPlayer = state.currentPlayer;
     this.state.phase = state.phase;
