@@ -20,6 +20,16 @@ PF.game = {
       return false;
     }
 
+    if (s.timeLeft <= 0) {
+      return false;
+    }
+
+    // Нельзя объявлять отсутствие хода посреди простого хода.
+    // Если игрок уже сделал 1 или 2 отрезка, даём ему продолжить.
+    if (s.phase === "simple" && s.turnSegments.length > 0) {
+      return false;
+    }
+
     // В онлайне автоматическое решение принимает только хост.
     if (PF.online && PF.online.room && !PF.online.isHost) {
       return false;
@@ -30,12 +40,18 @@ PF.game = {
         ? PF.rules.legalSimpleTargets(s)
         : PF.rules.legalPenaltyTargets(s);
 
-    // Если ходы есть — ничего не делаем.
     if (targets.length > 0) {
       return false;
     }
 
-    // Если нет простого хода — соперник бьёт пенальти.
+    console.warn("No legal moves detected", {
+      phase: s.phase,
+      turnSegments: s.turnSegments.length,
+      ball: s.ball,
+      visitedCount: s.visited.size,
+      segmentsCount: s.segments.length
+    });
+
     if (s.phase === "simple") {
       const next = this.other(s.currentPlayer);
 
@@ -54,7 +70,6 @@ PF.game = {
       return true;
     }
 
-    // Если нет даже пенальти — ничья.
     this.declareDraw("Ничья: у игроков нет допустимых ходов.");
 
     return true;
@@ -603,43 +618,34 @@ PF.game = {
 
     s.over = true;
     s.phase = "goal";
-    if (PF.ai) {
-      PF.ai.stop();
-    }
 
     const scorerName = s.players[scorer];
+
     s.result = {
       type: "goal",
       winner: scorer,
       text: `Гол! ${scorerName} побеждает.`
     };
-    const concededName = s.players[this.other(scorer)];
 
     PF.audio.goal();
 
-    PF.stats.finishGame({
-      p1: s.players[1],
-      p2: s.players[2],
-      winnerName: scorerName,
-      draw: false,
-      scorerName,
-      concededName
-    });
+    if (PF.save) {
+      PF.save.logSimple?.(s, true, scorer);
+    }
 
     PF.history.logGoal(s, scorer);
-    if (PF.save) {
-      PF.save.autoSaveCurrent();
-    }
-    if (PF.cloud) {
-      PF.cloud.syncMatch(s);
-    }
-    PF.ui.showGoalOverlay(scorerName);
+
+    PF.ui.showResultOverlay(`Гол! ${scorerName}`, "goal");
     PF.ui.setMessage(`Гол! ${scorerName} побеждает.`);
     PF.ui.updateHUD(s);
     PF.render.draw(s);
-         // Синхронизация с облаком
+
     if (PF.online && PF.online.room) {
-      PF.online.updateRoomState(s);
+      if (PF.online.isHost) {
+        PF.online.finishOnlineMatch(s);
+      } else {
+        PF.online.updateRoomState(s, true);
+      }
     }
   },
 
@@ -652,36 +658,32 @@ PF.game = {
 
     s.over = true;
     s.phase = "draw";
+
     s.result = {
       type: "draw",
       text: reason || "Ничья."
     };
-    if (PF.ai) {
-      PF.ai.stop();
-    }
 
     PF.audio.draw();
 
-    PF.stats.finishGame({
-      p1: s.players[1],
-      p2: s.players[2],
-      draw: true
-    });
-
     PF.history.logDraw(s, reason);
-    if (PF.save) {
-      PF.save.logDraw(s, reason);
-      PF.save.autoSaveCurrent();
-    }
-    if (PF.cloud) {
-      PF.cloud.syncMatch(s);
-    }
-    PF.ui.setMessage(reason);
+
+    PF.ui.showResultOverlay(s.result.text, "draw");
+    PF.ui.setMessage(s.result.text);
     PF.ui.updateHUD(s);
     PF.render.draw(s);
-         // Синхронизация с облаком
+
+    if (PF.save) {
+      PF.save.logDraw?.(s, reason);
+      PF.save.autoSaveCurrent?.();
+    }
+
     if (PF.online && PF.online.room) {
-      PF.online.updateRoomState(s);
+      if (PF.online.isHost) {
+        PF.online.finishOnlineMatch(s);
+      } else {
+        PF.online.updateRoomState(s, true);
+      }
     }
   },
 
