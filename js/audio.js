@@ -65,6 +65,14 @@ PF.audio = {
     this.tone(1900, 0.16, "square", 0.05);
     this.tone(1450, 0.2, "square", 0.045, 0.16);
   },
+  opponentMove() {
+    this.tone(880, 0.06, "sine", 0.04);
+  },
+
+  yourTurn() {
+    this.tone(660, 0.08, "sine", 0.05);
+    this.tone(880, 0.08, "sine", 0.05, 0.1);
+  },
 
   goal() {
     [523, 659, 784, 1047].forEach((f, i) => {
