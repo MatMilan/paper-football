@@ -81,7 +81,7 @@ PF.online = {
       this.isHost = true;
       this.myPlayerNumber = 1;
 
-      this.subscribeToRoom();
+      this.();
 
       return data;
     } catch (e) {
@@ -165,9 +165,14 @@ PF.online = {
   },
 
   subscribeToRoom() {
-    if (!this.room || !PF.cloud.client) return;
+    if (!this.room || !PF.cloud.client) {
+      console.warn("Cannot subscribe: no room or client");
+      return;
+    }
 
     this.unsubscribe();
+
+    console.log("Subscribing to room:", this.room.id);
 
     this.subscription = PF.cloud.client
       .channel(`room-${this.room.id}`)
@@ -180,10 +185,13 @@ PF.online = {
           filter: `id=eq.${this.room.id}`
         },
         (payload) => {
+          console.log("Room update received:", payload);
           this.handleRoomUpdate(payload.new);
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Subscription status:", status);
+      });
   },
 
   subscribeToRoomsList(callback) {
@@ -222,13 +230,21 @@ PF.online = {
   },
 
   handleRoomUpdate(newRoom) {
+    console.log("handleRoomUpdate called with:", newRoom);
+  
     const oldRoom = this.room;
     this.room = newRoom;
 
-    if (!PF.game.state) return;
+    if (!PF.game.state) {
+      console.warn("No game state");
+      return;
+    }
 
     const oldState = oldRoom.state;
     const newState = newRoom.state;
+
+    console.log("Old state segments:", oldState.segments?.length);
+    console.log("New state segments:", newState.segments?.length);
 
     if (newState.over && !oldState.over) {
       PF.game.state.over = true;
@@ -239,6 +255,7 @@ PF.online = {
     }
 
     if (newState.currentPlayer !== oldState.currentPlayer || newState.segments.length !== oldState.segments.length) {
+      console.log("Syncing state from room");
       this.syncStateFromRoom(newState);
     }
   },
