@@ -142,10 +142,15 @@ PF.ui = {
 
     try {
       const session = await PF.cloud.getCurrentSession();
-      
+
       if (session?.user) {
         await PF.cloud.getOrCreateProfile();
-        this.showMenu();
+
+        const restored = await this.tryRestoreOnline();
+
+        if (!restored) {
+          this.showMenu();
+        }
       } else {
         this.showScreen("authScreen");
       }
@@ -728,7 +733,23 @@ PF.ui = {
       this.els.goalOverlay.classList.add("hidden");
     }, 1800);
   },
+  async tryRestoreOnline() {
+    if (!PF.online || !PF.cloud.currentProfile) return false;
 
+    try {
+      const room = await PF.online.restoreActiveRoom();
+
+      if (room) {
+        PF.game.startOnlineMatch(room);
+        return true;
+      }
+    } catch (e) {
+      console.warn("Restore online error:", e);
+      PF.online.clearActive();
+    }
+
+    return false;
+  },
   escape(value) {
     return String(value)
       .replaceAll("&", "&amp;")
