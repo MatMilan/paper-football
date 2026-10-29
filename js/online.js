@@ -268,6 +268,8 @@ PF.online = {
   applyRemoteState(newState) {
     const s = PF.game.state;
     if (!s || !newState) return;
+    s.animating = false;
+    s.timeoutPending = false;
 
     console.log("Applying remote state, revision:", this.lastRevision);
 
@@ -311,6 +313,11 @@ PF.online = {
     PF.ui.updateTimer(s);
     PF.render.draw(s);
     PF.history.render(s);
+    // Если после хода соперника у текущего игрока нет ходов —
+    // хост автоматически назначает пенальти или ничью.
+    if (PF.game && PF.game.autoHandleNoMoves) {
+      PF.game.autoHandleNoMoves();
+    }
   },
 
   async updateRoomState(state) {
@@ -369,6 +376,16 @@ PF.online = {
         this.room = data;
 
         if (state.over) {
+          // Освобождаем код комнаты после завершения матча.
+          try {
+            await PF.cloud.client
+              .from("rooms")
+              .update({ room_code: null })
+              .eq("id", this.room.id);
+          } catch (e) {
+            console.warn("Cannot release room code:", e);
+          }
+
           this.clearActive();
           this.stopPolling();
         }
