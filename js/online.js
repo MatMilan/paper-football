@@ -211,6 +211,7 @@ PF.online = {
       this.saveActive();
       this.subscribeToRoom();
       this.startPolling();
+      this.updateActivityTime();
 
       return data;
     } catch (e) {
@@ -275,6 +276,8 @@ PF.online = {
       this.saveActive();
       this.subscribeToRoom();
       this.startPolling();
+      this.updateActivityTime();
+      this.startOpponentStatusCheck();
 
       return data;
     } catch (e) {
