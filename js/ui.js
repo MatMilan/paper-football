@@ -35,6 +35,7 @@ PF.ui = {
       menuPvPBtn: document.getElementById("menuPvPBtn"),
       menuPvCBtn: document.getElementById("menuPvCBtn"),
       menuOnlineBtn: document.getElementById("menuOnlineBtn"),
+      menuContinueBtn: document.getElementById("menuContinueBtn"),
       menuStatsBtn: document.getElementById("menuStatsBtn"),
       menuLogoutBtn: document.getElementById("menuLogoutBtn"),
 
@@ -76,8 +77,6 @@ PF.ui = {
       message: document.getElementById("message"),
 
       // Кнопки игры
-      cannotMoveBtn: document.getElementById("cannotMoveBtn"),
-      offerDrawBtn: document.getElementById("offerDrawBtn"),
       soundBtn: document.getElementById("soundBtn"),
       historyToggleBtn: document.getElementById("historyToggleBtn"),
       saveMatchBtn: document.getElementById("saveMatchBtn"),
@@ -250,6 +249,7 @@ PF.ui = {
   showMenu() {
     this.showScreen("menuScreen");
     this.updateUserInfo();
+    this.updateContinueButton();
   },
 
   updateUserInfo() {
@@ -272,23 +272,43 @@ PF.ui = {
   },
 
   bindMenu() {
+    this.els.menuContinueBtn.addEventListener("click", () => {
+      this.showScreen("app");
+
+      if (PF.game.state) {
+        PF.game.setPaused(false);
+        PF.ui.updateHUD(PF.game.state);
+        PF.render.draw(PF.game.state);
+      }
+
+      if (PF.online && PF.online.room) {
+        PF.online.refreshRoom();
+      }
+    });
+
     this.els.menuPvPBtn.addEventListener("click", () => {
-      // Автозаполнение имени игрока 1, если пользователь авторизован
+      if (!this.confirmAndClearActiveGame("Начать игру против друга? Текущий матч будет потерян.")) {
+        return;
+      }
+
       if (!this.isGuest && PF.cloud.currentProfile && PF.cloud.currentProfile.display_name) {
         this.els.pvpPlayer1Name.value = PF.cloud.currentProfile.display_name;
       } else {
         this.els.pvpPlayer1Name.value = "";
       }
-  
-      // Второй игрок всегда пустой
+
       this.els.pvpPlayer2Name.value = "";
       this.els.pvpError.textContent = "";
-  
+
       this.showScreen("pvpSetupScreen");
       this.currentMode = "pvp";
     });
 
     this.els.menuPvCBtn.addEventListener("click", () => {
+      if (!this.confirmAndClearActiveGame("Начать игру против компьютера? Текущий матч будет потерян.")) {
+        return;
+      }
+
       this.startPvCMatch();
     });
 
@@ -297,6 +317,11 @@ PF.ui = {
         alert("Онлайн-игра доступна только для авторизованных пользователей.");
         return;
       }
+
+      if (!this.confirmAndClearActiveGame("Перейти к онлайн-игре? Текущий матч будет потерян.")) {
+        return;
+      }
+
       this.showOnlineScreen();
     });
 
@@ -305,9 +330,14 @@ PF.ui = {
     });
 
     this.els.menuLogoutBtn.addEventListener("click", async () => {
+      if (!this.confirmAndClearActiveGame("Выйти из аккаунта? Текущий матч будет потерян.")) {
+        return;
+      }
+
       if (!this.isGuest && PF.cloud.ready) {
         await PF.cloud.signOut();
       }
+
       this.isGuest = false;
       PF.cloud.currentProfile = null;
       this.showScreen("authScreen");
@@ -556,22 +586,6 @@ PF.ui = {
   /* ==================== ИГРОВЫЕ КОНТРОЛЫ ==================== */
 
   bindGameControls() {
-    this.els.cannotMoveBtn.addEventListener("click", () => {
-      const state = PF.game.state;
-      if (!state || state.over || state.animating) return;
-
-      if (PF.render.currentTargets.length === 0) {
-        PF.game.resolveNoMove();
-      } else {
-        PF.audio.invalid();
-        this.setMessage("Есть доступный ход.");
-      }
-    });
-
-    this.els.offerDrawBtn.addEventListener("click", () => {
-      PF.game.offerDraw();
-    });
-
     this.els.soundBtn.addEventListener("click", () => {
       PF.audio.enabled = !PF.audio.enabled;
       PF.audio.save();
@@ -601,23 +615,26 @@ PF.ui = {
     });
 
     this.els.backToMenuBtn.addEventListener("click", () => {
+      if (PF.replay && PF.replay.active) {
+        PF.replay.exit();
+      }
+
       if (PF.game.state && !PF.game.state.over) {
-        if (!confirm("Выйти в меню? Текущая игра будет потеряна.")) {
+        if (!confirm("Выйти в меню? Текущая игра сохранится.")) {
           return;
+        }
+
+        // Для локальной игры ставим паузу.
+        // Онлайн-игру не останавливаем, только прячем интерфейс.
+        if (!PF.online || !PF.online.room) {
+          PF.game.setPaused(true);
         }
       }
 
-      if (PF.online) {
-        PF.online.leaveRoom();
-      }
-
-      clearInterval(PF.game.timerId);
-      PF.game.state = null;
-
       this.showScreen("menuScreen");
+      this.updateContinueButton();
     });
 
-    // Повтор
     if (PF.replay) {
       PF.replay.init();
     }
@@ -700,8 +717,7 @@ PF.ui = {
         ? "простой ход"
         : "пенальти";
 
-    this.els.offerDrawBtn.disabled = state.over || state.animating;
-    this.els.cannotMoveBtn.disabled = state.over || state.animating;
+    this.updateContinueButton();
   },
 
   updateTimer(state) {
@@ -733,6 +749,15 @@ PF.ui = {
       this.els.goalOverlay.classList.add("hidden");
     }, 1800);
   },
+  updateContinueButton() {
+    if (!this.els.menuContinueBtn) return;
+
+    const hasActiveGame =
+      PF.game.state &&
+      !PF.game.state.over;
+
+    this.els.menuContinueBtn.classList.toggle("hidden", !hasActiveGame);
+  },
   async tryRestoreOnline() {
     if (!PF.online || !PF.cloud.currentProfile) return false;
 
@@ -749,6 +774,26 @@ PF.ui = {
     }
 
     return false;
+  },
+  confirmAndClearActiveGame(message) {
+    if (PF.game.state && !PF.game.state.over) {
+      if (!confirm(message)) {
+        return false;
+      }
+    }
+
+    if (PF.online) {
+      PF.online.leaveRoom();
+    }
+
+    clearInterval(PF.game.timerId);
+
+    PF.game.state = null;
+    PF.game.paused = false;
+
+    this.updateContinueButton();
+
+    return true;
   },
   escape(value) {
     return String(value)
