@@ -1005,3 +1005,97 @@ select option {
   background: rgba(255, 255, 255, 0.06);
   color: var(--muted);
 }
+/* ===== Индикатор хода ===== */
+
+.turn-indicator {
+  text-align: center;
+  padding: 10px 20px;
+  margin: 8px auto;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  max-width: 320px;
+  transition: all 0.3s ease;
+}
+
+.turn-indicator.your-turn {
+  background: linear-gradient(135deg, rgba(123, 216, 143, 0.2), rgba(123, 216, 143, 0.1));
+  border: 2px solid rgba(123, 216, 143, 0.5);
+  color: var(--success);
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+.turn-indicator.opponent-turn {
+  background: linear-gradient(135deg, rgba(255, 213, 79, 0.15), rgba(255, 213, 79, 0.08));
+  border: 2px solid rgba(255, 213, 79, 0.4);
+  color: var(--accent);
+}
+
+.turn-indicator.local-p1 {
+  background: linear-gradient(135deg, rgba(255, 93, 93, 0.2), rgba(255, 93, 93, 0.1));
+  border: 2px solid rgba(255, 93, 93, 0.5);
+  color: var(--p1);
+}
+
+.turn-indicator.local-p2 {
+  background: linear-gradient(135deg, rgba(93, 155, 255, 0.2), rgba(93, 155, 255, 0.1));
+  border: 2px solid rgba(93, 155, 255, 0.5);
+  color: var(--p2);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(123, 216, 143, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(123, 216, 143, 0.4);
+  }
+}
+
+/* ===== Статус соперника ===== */
+
+.opponent-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 16px;
+  margin: 4px auto;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.connected {
+  background: var(--success);
+  box-shadow: 0 0 6px rgba(123, 216, 143, 0.6);
+}
+
+.status-dot.thinking {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(255, 213, 79, 0.6);
+  animation: blink 1s ease-in-out infinite;
+}
+
+.status-dot.disconnected {
+  background: var(--danger);
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ===== Подсветка последнего хода ===== */
+
+.last-move-highlight {
+  animation: segment-glow 2s ease-out forwards;
+}
