@@ -719,6 +719,23 @@ PF.online = {
       console.warn("Refresh room error", e);
     }
   },
+  getInviteLink() {
+    if (!this.room) return "";
+
+    const base = window.location.origin + window.location.pathname;
+    const code = this.room.room_code;
+
+    return `${base}?join=${encodeURIComponent(code)}`;
+  },
+  getRoomSettingsLabel(room) {
+    const settings = room.state?.settings;
+    if (!settings) return "";
+
+    const sizeLabel = settings.fieldSize || "28x38";
+    const timeLabel = `${settings.turnSeconds || 20}с`;
+
+    return { sizeLabel, timeLabel };
+  },
 
   flushPending() {
     if (this.pendingRemote && PF.game.state && !PF.game.state.animating) {
