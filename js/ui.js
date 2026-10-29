@@ -724,6 +724,10 @@
     try {
       this.els.joinError.textContent = "Подключение...";
       const room = await PF.online.joinRoom(code, profile.display_name);
+      // Скрываем баннер приглашения
+      if (this.els.inviteBanner) {
+        this.els.inviteBanner.classList.add("hidden");
+      }
 
       this.els.onlineScreen.classList.add("hidden");
       this.showScreen("app");
