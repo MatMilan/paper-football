@@ -97,7 +97,8 @@ PF.save = {
       type: "start",
       players: state.players,
       currentPlayer: state.currentPlayer,
-      ball: PF.geo.clone(PF.CFG.START)
+      ball: PF.geo.clone(PF.CFG.START),
+      settings: state.settings || null
     });
   },
 
@@ -390,6 +391,11 @@ PF.replay = {
       if (ev.type === "start") {
         player = ev.currentPlayer || 1;
         ball = PF.geo.clone(ev.ball || PF.CFG.START);
+
+        // Применяем настройки из события, если они есть
+        if (ev.settings) {
+          PF.applyGameSettings(ev.settings);
+        }
 
         frames[0] = {
           segments: [],
