@@ -40,7 +40,7 @@ PF.state = {
       cloudSynced: false,
 
       history: [],
-      noMoveTimer: null
+      noMoveTimer: null,
       settings: null,
       _settingsApplied: false
     };
