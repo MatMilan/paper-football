@@ -81,7 +81,7 @@ PF.online = {
       this.isHost = true;
       this.myPlayerNumber = 1;
 
-      this.();
+      this.subscribeToRoom();
 
       return data;
     } catch (e) {
