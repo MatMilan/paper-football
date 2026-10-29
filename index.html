@@ -116,7 +116,37 @@
       </div>
     </div>
   </div>
+  <!-- Экран настроек для игры с компьютером -->
+  <div id="pvcSetupScreen" class="overlay hidden">
+    <div class="card">
+      <h2>Игра против компьютера</h2>
+      <p class="muted">Выбери параметры матча.</p>
 
+      <form id="pvcSetupForm">
+        <label>
+          Время на ход
+          <select id="pvcTurnTimeSelect">
+            <option value="20" selected>20 секунд</option>
+            <option value="30">30 секунд</option>
+          </select>
+        </label>
+
+        <label>
+          Размер поля
+          <select id="pvcFieldSizeSelect">
+            <option value="28x38" selected>28 × 38 (стандарт)</option>
+            <option value="20x30">20 × 30 (среднее)</option>
+            <option value="16x24">16 × 24 (малое)</option>
+          </select>
+        </label>
+
+        <div class="row">
+          <button type="submit" class="primary">Начать матч</button>
+          <button type="button" id="pvcBackBtn">Назад</button>
+        </div>
+      </form>
+    </div>
+  </div>
   <!-- Экран настройки PvP -->
   <div id="pvpSetupScreen" class="overlay hidden">
     <div class="card">
@@ -132,6 +162,23 @@
         <label>
           Игрок 2 (синий)
           <input id="pvpPlayer2Name" maxlength="20" placeholder="Имя второго игрока" />
+        </label>
+
+        <label>
+          Время на ход
+          <select id="pvpTurnTimeSelect">
+            <option value="20" selected>20 секунд</option>
+            <option value="30">30 секунд</option>
+          </select>
+        </label>
+
+        <label>
+          Размер поля
+          <select id="pvpFieldSizeSelect">
+            <option value="28x38" selected>28 × 38 (стандарт)</option>
+            <option value="20x30">20 × 30 (среднее)</option>
+            <option value="16x24">16 × 24 (малое)</option>
+          </select>
         </label>
 
         <div class="row">
@@ -166,8 +213,25 @@
       <div id="createTab" class="tab-content hidden">
         <form id="createRoomForm">
           <label>
-            Код комнаты (3-10 символов)
+            Код комнаты (3–10 символов)
             <input id="roomCodeInput" maxlength="10" placeholder="Например: MYGAME2024" />
+          </label>
+
+          <label>
+            Время на ход
+            <select id="turnTimeSelect">
+              <option value="20" selected>20 секунд</option>
+              <option value="30">30 секунд</option>
+            </select>
+          </label>
+
+          <label>
+            Размер поля
+            <select id="fieldSizeSelect">
+              <option value="28x38" selected>28 × 38 (стандарт)</option>
+              <option value="20x30">20 × 30 (среднее)</option>
+              <option value="16x24">16 × 24 (малое)</option>
+            </select>
           </label>
 
           <label class="checkbox-row">
