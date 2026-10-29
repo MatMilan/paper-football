@@ -215,6 +215,10 @@ PF.game = {
     if (PF.ai) {
       PF.ai.maybePlay();
     }
+    // Звук при начале вашего хода в онлайне
+    if (PF.online && PF.online.room && PF.online.isMyTurn()) {
+      PF.audio.yourTurn();
+}
   },
 
   resetTimer() {
@@ -660,6 +664,8 @@ PF.game = {
     PF.ui.showResultOverlay(`Гол! ${scorerName}`, "goal");
     PF.ui.setMessage(`Гол! ${scorerName} побеждает.`);
     PF.ui.updateHUD(s);
+    PF.ui.updateTurnIndicator(s);
+    PF.ui.updateOpponentStatus("connected");
     PF.render.draw(s);
 
     if (PF.online && PF.online.room) {
@@ -689,6 +695,8 @@ PF.game = {
     PF.ui.showResultOverlay(s.result.text, "draw");
     PF.ui.setMessage(s.result.text);
     PF.ui.updateHUD(s);
+    PF.ui.updateTurnIndicator(s);
+    PF.ui.updateOpponentStatus("connected");
     PF.render.draw(s);
 
     if (PF.save) {
