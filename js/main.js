@@ -5,12 +5,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const canvas = PF.render.canvas;
 
   canvas.addEventListener("click", (e) => {
-    if (PF.replay && PF.replay.active) {
-      return;
-    }
+    if (PF.replay && PF.replay.active) return;
 
     const state = PF.game.state;
-
     if (!state || state.over || state.animating) return;
 
     if (PF.online && PF.online.room && !PF.online.canMakeMove()) {
@@ -30,13 +27,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  document.addEventListener(
-    "pointerdown",
-    () => {
-      PF.audio.init();
-    },
-    { once: true }
-  );
+  document.addEventListener("pointerdown", () => PF.audio.init(), { once: true });
 
   document.addEventListener("pointerdown", () => {
     if (PF.audio.ctx && PF.audio.ctx.state === "suspended") {
@@ -44,28 +35,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // Инициализация Supabase
   if (PF.cloud) {
     PF.cloud.init();
-    
-    // Добавь это для отладки
+
     if (PF.cloud.ready) {
-      console.log("Supabase ready");
-      
-      // Слушаем изменения состояния авторизации
       PF.cloud.client.auth.onAuthStateChange(async (event, session) => {
         console.log("Auth state changed:", event);
-        
+
         if (event === "SIGNED_IN" && session) {
-          console.log("User signed in:", session.user);
-          
-          // Создаём или получаем профиль
           try {
-            const profile = await PF.cloud.getOrCreateProfile();
-            console.log("Profile loaded:", profile);
-            
-            // Показываем главное меню
-            if (PF.ui) {
+            await PF.cloud.getOrCreateProfile();
+
+            // Если уже есть активный онлайн-матч — НЕ показываем меню.
+            if (PF.game.state && !PF.game.state.over) {
+              return;
+            }
+
+            const restored = await PF.ui.tryRestoreOnline();
+            if (!restored) {
               PF.ui.showMenu();
             }
           } catch (e) {
@@ -75,4 +62,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
   }
+
+  // Возврат во вкладку: подтягиваем актуальное состояние комнаты.
+  document.addEventListener("visibilitychange", async () => {
+    if (document.hidden) return;
+
+    if (PF.online && PF.online.room && PF.game.state && !PF.game.state.over) {
+      await PF.online.refreshRoom();
+    }
+  });
 });
