@@ -5,6 +5,8 @@ PF.online = {
   pendingRemote: null,
   pollingTimer: null,
   channelStatus: null,
+  lastActivityTime: null,
+  opponentStatusCheckTimer: null,
   room: null,
   finishInProgress: false,
   roomFinished: false,
@@ -51,6 +53,57 @@ PF.online = {
       history: state.history,
       settings: state.settings || null
     };
+  },
+  updateActivityTime() {
+    this.lastActivityTime = Date.now();
+    this.updateOpponentStatus("connected");
+  },
+
+  startOpponentStatusCheck() {
+    this.stopOpponentStatusCheck();
+
+    this.opponentStatusCheckTimer = setInterval(() => {
+      this.checkOpponentStatus();
+    }, 5000);
+  },
+
+  stopOpponentStatusCheck() {
+    clearInterval(this.opponentStatusCheckTimer);
+    this.opponentStatusCheckTimer = null;
+  },
+
+  checkOpponentStatus() {
+    if (!this.room || !PF.game.state) return;
+    if (PF.game.state.over) return;
+
+    const isMyTurn = PF.game.state.currentPlayer === this.myPlayerNumber;
+
+    if (isMyTurn) {
+      // Сейчас наш ход — статус соперника не так важен
+      this.updateOpponentStatus("connected");
+      return;
+    }
+
+    // Сейчас ход соперника
+    if (!this.lastActivityTime) {
+      this.updateOpponentStatus("thinking");
+      return;
+    }
+
+    const elapsed = Date.now() - this.lastActivityTime;
+
+    if (elapsed > 60000) {
+      // Больше 60 секунд нет активности
+      this.updateOpponentStatus("disconnected");
+    } else {
+      this.updateOpponentStatus("thinking");
+    }
+  },
+
+  updateOpponentStatus(status) {
+    if (PF.ui && PF.ui.updateOpponentStatus) {
+      PF.ui.updateOpponentStatus(status);
+    }
   },
 
   async createRoom(roomCode, isPrivate, playerName, settings = null) {
@@ -273,7 +326,10 @@ PF.online = {
         this.channelStatus = status;
         console.log("Subscription status:", status);
       });
-  },
+      // Запускаем проверку статуса соперника
+      this.updateActivityTime();
+      this.startOpponentStatusCheck();
+   },
 
   subscribeToRoomsList(callback) {
     if (!PF.cloud.client) return;
@@ -312,6 +368,8 @@ PF.online = {
 
   handleRoomUpdate(newRoom) {
     const rev = newRoom.revision || 0;
+    // Обновляем время активности при получении любого обновления
+    this.updateActivityTime();
 
     // Это ответ на наше же сообщение — не применяем его повторно.
     if (rev === this.lastSentRevision) {
@@ -364,6 +422,8 @@ PF.online = {
     s.turnStartBall = PF.geo.clone(newState.turnStartBall);
     s.path = newState.path.map(p => PF.geo.clone(p));
     s.visited = new Set(newState.visited);
+    // Запоминаем количество сегментов до обновления
+    const prevSegmentsCount = s.segments ? s.segments.length : 0;
 
     s.segments = newState.segments.map(seg => ({
       a: PF.geo.clone(seg.a),
@@ -428,6 +488,13 @@ PF.online = {
     // Если рейтинг пришёл уже после того, как матч стал завершённым
     if (s.over && PF.online && newState.result?.rating) {
       PF.online.showResultMessage(s.result);
+    }
+    // Определяем новые сегменты и подсвечиваем их
+    const newSegmentsCount = s.segments.length;
+    if (newSegmentsCount > prevSegmentsCount) {
+      const newSegments = s.segments.slice(prevSegmentsCount);
+      PF.render.highlightLastMove(newSegments);
+      PF.audio.opponentMove();
     }
 
     if (PF.game.autoHandleNoMoves) {
@@ -762,5 +829,7 @@ PF.online = {
     this.room = null;
     this.isHost = false;
     this.myPlayerNumber = null;
+    this.stopOpponentStatusCheck();
+    this.lastActivityTime = null;
   }
 };
