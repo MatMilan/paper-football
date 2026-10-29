@@ -15,7 +15,7 @@ PF.ui = {
     this.updateSoundBtn();
     this.checkAuthOnLoad();
   },
-
+  
   cache() {
     this.els = {
       // Экран авторизации
@@ -112,7 +112,27 @@ PF.ui = {
       goalText: document.getElementById("goalText")
     };
   },
+  showResultOverlay(text, type = "goal") {
+    if (!this.els.goalOverlay || !this.els.goalText) return;
 
+    const textEl = this.els.goalText;
+
+    textEl.textContent = text;
+    textEl.className = `result-text ${type}`;
+
+    this.els.goalOverlay.classList.remove("hidden");
+
+    // Перезапуск анимации
+    textEl.style.animation = "none";
+    void textEl.offsetWidth;
+    textEl.style.animation = "";
+
+    clearTimeout(this.goalTimer);
+
+    this.goalTimer = setTimeout(() => {
+      this.els.goalOverlay.classList.add("hidden");
+    }, 2200);
+  },
   /* ==================== ЭКРАНЫ ==================== */
 
   showScreen(screenId) {
