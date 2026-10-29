@@ -902,6 +902,12 @@
       this.els.statsModal.classList.add("hidden");
     });
 
+    if (this.els.closeHistory) {
+      this.els.closeHistory.addEventListener("click", () => {
+        this.showScreen("menuScreen");
+      });
+    }
+
     this.els.backToMenuBtn.addEventListener("click", () => {
       if (PF.replay && PF.replay.active) {
         PF.replay.exit();
