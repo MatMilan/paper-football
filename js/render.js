@@ -119,6 +119,11 @@ PF.render = {
       } else {
         state.animating = false;
         if (cb) cb();
+
+        // Применяем состояние соперника, которое ждало конца анимации.
+        if (PF.online) {
+          PF.online.flushPending();
+        }
       }
     };
 
