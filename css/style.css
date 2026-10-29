@@ -900,3 +900,108 @@ select option {
   background: var(--panel);
   color: var(--text);
 }
+/* ===== Приглашение в комнату ===== */
+
+.invite-block {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 16px;
+  margin: 16px 0;
+  text-align: left;
+}
+
+.invite-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.invite-label {
+  color: var(--muted);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.invite-code {
+  font-size: 22px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+}
+
+.invite-link-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.invite-link-wrap {
+  flex: 1;
+  display: flex;
+  gap: 6px;
+}
+
+.invite-link {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 12px;
+  outline: none;
+}
+
+.copy-btn {
+  padding: 6px 10px;
+  font-size: 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.copy-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.copy-feedback {
+  margin-top: 8px;
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* Баннер приглашения */
+
+.invite-banner {
+  background: linear-gradient(135deg, rgba(93, 155, 255, 0.2), rgba(93, 155, 255, 0.1));
+  border: 1px solid rgba(93, 155, 255, 0.3);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  text-align: center;
+}
+
+.invite-banner strong {
+  color: var(--accent);
+  letter-spacing: 0.1em;
+}
+
+/* Список комнат — доп. информация */
+
+.room-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.room-meta span {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+}
