@@ -90,8 +90,11 @@ PF.game = {
     if (settings) {
       PF.applyGameSettings(settings);
     }
-
+    // Сохраняем настройки в state для записи в события
     this.state = PF.state.create({ 1: p1, 2: p2 });
+    if (settings) {
+      this.state.settings = settings;
+    }
 
     if (cloudProfiles && (cloudProfiles.p1 || cloudProfiles.p2)) {
       this.state.cloud = cloudProfiles;
