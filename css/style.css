@@ -1099,3 +1099,98 @@ select option {
 .last-move-highlight {
   animation: segment-glow 2s ease-out forwards;
 }
+/* ===== История матчей ===== */
+
+.history-card {
+  max-width: 700px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.match-history-list {
+  overflow-y: auto;
+  max-height: 60vh;
+  display: grid;
+  gap: 10px;
+}
+
+.match-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  background: var(--panel-2);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.match-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.match-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.match-opponent {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.match-details {
+  display: flex;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.match-result {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.match-result.win {
+  background: rgba(123, 216, 143, 0.15);
+  color: var(--success);
+}
+
+.match-result.loss {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+
+.match-result.draw {
+  background: rgba(255, 213, 79, 0.15);
+  color: var(--accent);
+}
+
+.match-rating {
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.match-rating.positive {
+  color: var(--success);
+}
+
+.match-rating.negative {
+  color: var(--danger);
+}
+
+.match-replay-btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  background: rgba(93, 155, 255, 0.15);
+  color: var(--p2);
+  flex-shrink: 0;
+}
