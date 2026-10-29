@@ -52,8 +52,13 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             const restored = await PF.ui.tryRestoreOnline();
+
             if (!restored) {
-              PF.ui.showMenu();
+              if (PF.pendingInviteCode) {
+                PF.ui.showOnlineScreen();
+              } else {
+                PF.ui.showMenu();
+              }
             }
           } catch (e) {
             console.error("Error loading profile:", e);
