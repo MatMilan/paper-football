@@ -40,6 +40,10 @@
     this.startTurn(this.state.currentPlayer, "simple");
   },
   startOnlineMatch(room) {
+    if (PF.ai) {
+      PF.ai.enabled = false;
+      PF.ai.stop();
+    }
     const state = room.state;
 
     this.state = PF.state.create(state.players);
@@ -141,6 +145,11 @@
     if (s.timeLeft <= 0) {
       clearInterval(this.timerId);
 
+      // В онлайне таймаут обрабатывает только хост.
+      if (PF.online && PF.online.room && !PF.online.isHost) {
+        return;
+      }
+
       if (s.animating) {
         s.timeoutPending = true;
       } else {
@@ -152,7 +161,9 @@
   scheduleNoMoveIfNeeded() {
     const s = this.state;
     if (!s || s.over || s.animating) return;
-
+    // В онлайне авто-проверку делает только хост.
+    if (PF.online && PF.online.room && !PF.online.isHost) return;
+    
     clearTimeout(s.noMoveTimer);
     s.noMoveTimer = null;
 
@@ -471,6 +482,9 @@
 
     this.startTurn(other, "penalty");
     PF.ui.setMessage(`Время вышло. Пенальти пробивает ${otherName}.`);
+    if (PF.online && PF.online.room) {
+      PF.online.updateRoomState(this.state);
+    }
          // Синхронизация с облаком
     if (PF.online && PF.online.room) {
       PF.online.updateRoomState(s);
