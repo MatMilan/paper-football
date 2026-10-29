@@ -97,6 +97,13 @@
             <small>Играй с другими игроками</small>
           </span>
         </button>
+        <button id="menuHistoryBtn" class="menu-btn">
+          <span class="icon">📜</span>
+          <span class="text">
+            <strong>Мои матчи</strong>
+            <small>История и повторы</small>
+          </span>
+        </button>
 
         <button id="menuStatsBtn" class="menu-btn">
           <span class="icon">📊</span>
@@ -368,6 +375,19 @@
         <button id="closeStats" title="Закрыть">×</button>
       </div>
       <div id="statsTableWrap"></div>
+    </div>
+  </div>
+  <!-- Экран истории матчей -->
+  <div id="matchHistoryScreen" class="overlay hidden">
+    <div class="card history-card">
+      <div class="modal-header">
+        <h2>Мои матчи</h2>
+        <button id="closeHistory" title="Закрыть">×</button>
+      </div>
+
+      <div id="matchHistoryList" class="match-history-list">
+        <p class="muted">Загрузка...</p>
+      </div>
     </div>
   </div>
 
