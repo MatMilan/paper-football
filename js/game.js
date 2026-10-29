@@ -675,7 +675,12 @@ PF.game = {
 
     if (PF.save) {
       PF.save.logDraw?.(s, reason);
-      PF.save.autoSaveCurrent?.();
+
+      // Локально сохраняем только если это не онлайн-матч.
+      // Онлайн-матч сохраняется в Supabase через finish_online_match.
+      if (!(PF.online && PF.online.room)) {
+        PF.save.autoSaveCurrent?.();
+      }
     }
 
     if (PF.online && PF.online.room) {
