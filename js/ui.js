@@ -738,6 +738,11 @@ PF.ui = {
         : "пенальти";
 
     this.updateContinueButton();
+    const isOnlineActive = PF.online && PF.online.room;
+
+    if (this.els.saveMatchBtn) {
+      this.els.saveMatchBtn.style.display = isOnlineActive ? "none" : "";
+    }
   },
 
   updateTimer(state) {
