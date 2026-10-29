@@ -227,6 +227,38 @@ PF.render = {
 
     ctx.restore();
   },
+  drawGrid(ctx) {
+    ctx.save();
+
+    ctx.strokeStyle = "#d8d0ba";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+
+    for (let x = 0; x <= PF.CFG.cellsX; x++) {
+      const a = PF.geo.toCanvas({ x, y: 0 });
+      const b = PF.geo.toCanvas({ x, y: PF.CFG.cellsY });
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+    }
+
+    for (let y = 0; y <= PF.CFG.cellsY; y++) {
+      const a = PF.geo.toCanvas({ x: 0, y });
+      const b = PF.geo.toCanvas({ x: PF.CFG.cellsX, y });
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+    }
+
+    ctx.stroke();
+
+    const tl = PF.geo.toCanvas({ x: 0, y: 0 });
+    const br = PF.geo.toCanvas({ x: PF.CFG.cellsX, y: PF.CFG.cellsY });
+
+    ctx.strokeStyle = "#8f8874";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
+
+    ctx.restore();
+  },
 
   drawSegments(ctx, state) {
     ctx.save();
