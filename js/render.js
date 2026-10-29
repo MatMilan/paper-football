@@ -11,6 +11,17 @@ PF.render = {
     canvas.width = PF.CFG.padding * 2 + PF.CFG.cellsX * PF.CFG.cell;
     canvas.height = PF.CFG.padding * 2 + PF.CFG.cellsY * PF.CFG.cell;
   },
+  resize() {
+    if (!this.canvas) return;
+
+    this.canvas.width = PF.CFG.padding * 2 + PF.CFG.cellsX * PF.CFG.cell;
+    this.canvas.height = PF.CFG.padding * 2 + PF.CFG.cellsY * PF.CFG.cell;
+
+    // Если есть активная игра — перерисовываем
+    if (PF.game.state) {
+      this.draw(PF.game.state);
+    }
+  },
 
   eventToCanvas(e) {
     const rect = this.canvas.getBoundingClientRect();
