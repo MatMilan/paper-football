@@ -49,10 +49,11 @@ PF.online = {
       } : null,
       trail: [],
       history: state.history
+      settings: state.settings || null,
     };
   },
 
-  async createRoom(roomCode, isPrivate, playerName) {
+  async createRoom(roomCode, isPrivate, playerName, settings = null) {
     if (!PF.cloud || !PF.cloud.ready) {
       throw new Error("Supabase не подключен.");
     }
@@ -80,6 +81,19 @@ PF.online = {
       throw new Error("Такой код уже используется. Придумайте другой.");
     }
 
+    // Определяем настройки поля
+    const fieldSize = settings?.fieldSize || "28x38";
+    const turnSeconds = settings?.turnSeconds || 20;
+    const fieldConfig = PF.FIELD_SIZES[fieldSize] || PF.FIELD_SIZES["28x38"];
+
+    // Применяем настройки для текущего клиента
+    PF.applyGameSettings({
+      cellsX: fieldConfig.cellsX,
+      cellsY: fieldConfig.cellsY,
+      goalWidth: fieldConfig.goalWidth,
+      turnSeconds: turnSeconds
+    });
+
     const initialState = {
       players: { 1: playerName, 2: null },
       currentPlayer: Math.random() < 0.5 ? 1 : 2,
@@ -104,7 +118,16 @@ PF.online = {
       saved: false,
       lastSegment: null,
       trail: [],
-      history: []
+      history: [],
+
+      // Сохраняем настройки в состоянии комнаты
+      settings: {
+        cellsX: fieldConfig.cellsX,
+        cellsY: fieldConfig.cellsY,
+        goalWidth: fieldConfig.goalWidth,
+        turnSeconds: turnSeconds,
+        fieldSize: fieldSize
+      }
     };
 
     try {
@@ -127,10 +150,10 @@ PF.online = {
       this.room = data;
       this.isHost = true;
       this.myPlayerNumber = 1;
-      this.finishInProgress = false;
-      this.roomFinished = false;
       this.lastRevision = data.revision || 0;
       this.lastSentRevision = null;
+      this.finishInProgress = false;
+      this.roomFinished = false;
 
       this.saveActive();
       this.subscribeToRoom();
@@ -169,6 +192,10 @@ PF.online = {
       }
 
       const updatedState = { ...room.state, players: { ...room.state.players, 2: playerName } };
+      // Применяем настройки комнаты
+      if (room.state && room.state.settings) {
+        PF.applyGameSettings(room.state.settings);
+      }
 
       const { data, error } = await PF.cloud.client
         .from("rooms")
@@ -323,6 +350,11 @@ PF.online = {
 
     s.animating = false;
     s.timeoutPending = false;
+    // Применяем настройки, если они пришли
+    if (newState.settings && !s._settingsApplied) {
+      PF.applyGameSettings(newState.settings);
+      s._settingsApplied = true;
+    }
 
     s.players = newState.players;
     s.currentPlayer = newState.currentPlayer;
@@ -624,6 +656,10 @@ PF.online = {
     }
 
     this.room = data;
+    // Применяем настройки комнаты
+    if (data.state && data.state.settings) {
+      PF.applyGameSettings(data.state.settings);
+    }
     this.isHost = data.host_profile_id === profile.id;
     this.myPlayerNumber = this.isHost ? 1 : 2;
     this.finishInProgress = false;
