@@ -41,6 +41,8 @@ PF.state = {
 
       history: [],
       noMoveTimer: null
+      settings: null,
+      _settingsApplied: false
     };
   }
 };
