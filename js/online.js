@@ -823,6 +823,28 @@ PF.online = {
   canMakeMove() {
     return this.isMyTurn() && PF.game.state && !PF.game.state.over && !PF.game.state.animating;
   },
+  async fetchMatchHistory() {
+    if (!PF.cloud || !PF.cloud.ready) return [];
+
+    const profile = PF.cloud.currentProfile;
+    if (!profile) return [];
+
+    const profileId = profile.id;
+
+    const { data, error } = await PF.cloud.client
+      .from("matches")
+      .select("*")
+      .or(`player1_profile_id.eq.${profileId},player2_profile_id.eq.${profileId}`)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Fetch match history error:", error);
+      return [];
+    }
+
+    return data || [];
+  },
   
   leaveRoom() {
     this.unsubscribe();
