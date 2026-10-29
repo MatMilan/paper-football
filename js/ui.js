@@ -20,6 +20,10 @@
   
   cache() {
     this.els = {
+      menuHistoryBtn: document.getElementById("menuHistoryBtn"),
+      matchHistoryScreen: document.getElementById("matchHistoryScreen"),
+      matchHistoryList: document.getElementById("matchHistoryList"),
+      closeHistory: document.getElementById("closeHistory"),
       turnIndicator: document.getElementById("turnIndicator"),
       turnIndicatorText: document.getElementById("turnIndicatorText"),
       opponentStatus: document.getElementById("opponentStatus"),
@@ -160,7 +164,7 @@
   /* ==================== ЭКРАНЫ ==================== */
 
   showScreen(screenId) {
-    const screens = ["authScreen", "menuScreen", "pvpSetupScreen", "pvcSetupScreen", "onlineScreen", "app"];
+    const screens = ["authScreen", "menuScreen", "pvpSetupScreen", "pvcSetupScreen", "onlineScreen", "app", "matchHistoryScreen"];
     screens.forEach(id => {
       const el = this.els[id];
       if (el) {
@@ -425,6 +429,10 @@
 
       this.showOnlineScreen();
     });
+   
+    this.els.menuHistoryBtn.addEventListener("click", () => {
+      this.showMatchHistory();
+    });
 
     this.els.menuStatsBtn.addEventListener("click", () => {
       this.showStats();
@@ -443,6 +451,118 @@
       PF.cloud.currentProfile = null;
       this.showScreen("authScreen");
     });
+  },
+    /* ==================== ИСТОРИЯ МАТЧЕЙ ==================== */
+
+  async showMatchHistory() {
+    this.showScreen("matchHistoryScreen");
+    this.els.matchHistoryList.innerHTML = '<p class="muted">Загрузка...</p>';
+
+    const matches = await PF.online.fetchMatchHistory();
+
+    if (!matches.length) {
+      this.els.matchHistoryList.innerHTML = '<p class="muted">Пока нет сыгранных матчей.</p>';
+      return;
+    }
+
+    this.renderMatchHistory(matches);
+  },
+
+  renderMatchHistory(matches) {
+    const profileId = PF.cloud.currentProfile?.id;
+    if (!profileId) return;
+
+    this.els.matchHistoryList.innerHTML = "";
+
+    matches.forEach(match => {
+      const item = document.createElement("div");
+      item.className = "match-item";
+
+      // Определяем соперника и результат
+      const isPlayer1 = match.player1_profile_id === profileId;
+      const opponentName = isPlayer1 ? match.player2_name : match.player1_name;
+
+      let resultClass = "";
+      let resultText = "";
+
+      if (match.is_draw) {
+        resultClass = "draw";
+        resultText = "Ничья";
+      } else if (match.winner_profile_id === profileId) {
+        resultClass = "win";
+        resultText = "Победа";
+      } else {
+        resultClass = "loss";
+        resultText = "Поражение";
+      }
+
+      // Изменение рейтинга
+      const ratingChange = match.rating_change;
+      let ratingHtml = "";
+
+      if (ratingChange) {
+        const delta = isPlayer1 ? ratingChange.p1_delta : ratingChange.p2_delta;
+        if (delta != null) {
+          const sign = delta >= 0 ? "+" : "";
+          const cls = delta >= 0 ? "positive" : "negative";
+          ratingHtml = `<span class="match-rating ${cls}">${sign}${delta}</span>`;
+        }
+      }
+
+      // Дата
+      const date = new Date(match.created_at);
+      const dateStr = date.toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+
+      item.innerHTML = `
+        <div class="match-info">
+          <div class="match-opponent">vs ${this.escape(opponentName || "Неизвестный")}</div>
+          <div class="match-details">
+            <span>${dateStr}</span>
+          </div>
+        </div>
+        <span class="match-result ${resultClass}">${resultText}</span>
+        ${ratingHtml}
+        <button class="match-replay-btn">Повтор</button>
+      `;
+
+      const replayBtn = item.querySelector(".match-replay-btn");
+      replayBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this.startCloudReplay(match);
+      });
+
+      this.els.matchHistoryList.appendChild(item);
+    });
+  },
+
+  startCloudReplay(match) {
+    // Скрываем экран истории
+    this.showScreen("app");
+
+    // Применяем настройки матча, если они есть
+    if (match.settings) {
+      PF.applyGameSettings(match.settings);
+    }
+
+    // Формируем данные для повтора
+    const replayData = {
+      players: {
+        1: match.player1_name || "Игрок 1",
+        2: match.player2_name || "Игрок 2"
+      },
+      events: match.events || [],
+      result: match.score
+    };
+
+    // Запускаем повтор
+    if (PF.replay) {
+      PF.replay.start(replayData);
+    }
   },
 
   /* ==================== НАСТРОЙКА PvP ==================== */
