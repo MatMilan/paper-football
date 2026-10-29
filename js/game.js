@@ -114,6 +114,10 @@ PF.game = {
     this.autoHandleNoMoves();
   },
   startOnlineMatch(room) {
+    if (PF.online) {
+      PF.online.finishInProgress = false;
+      PF.online.roomFinished = false;
+    }
     if (PF.ai) {
       PF.ai.enabled = false;
       PF.ai.stop();
@@ -641,11 +645,7 @@ PF.game = {
     PF.render.draw(s);
 
     if (PF.online && PF.online.room) {
-      if (PF.online.isHost) {
-        PF.online.finishOnlineMatch(s);
-      } else {
-        PF.online.updateRoomState(s, true);
-      }
+      PF.online.reportMatchEnd(s);
     }
   },
 
@@ -679,11 +679,7 @@ PF.game = {
     }
 
     if (PF.online && PF.online.room) {
-      if (PF.online.isHost) {
-        PF.online.finishOnlineMatch(s);
-      } else {
-        PF.online.updateRoomState(s, true);
-      }
+      PF.online.reportMatchEnd(s);
     }
   },
 
