@@ -169,8 +169,7 @@ PF.render = {
     this.drawGrid(ctx);
     this.drawPoints(ctx, state);
     this.drawSegments(ctx, state);
-    this.drawGoalLabels(ctx, state);
-
+    
     if (!state.animating) {
       this.drawTargets(ctx, state);
     }
@@ -178,87 +177,52 @@ PF.render = {
     this.drawBall(ctx, state);
   },
 
-  drawGoals(ctx) {
+  drawGoals(ctx, state) {
     const topA = PF.geo.toCanvas({ x: PF.CFG.GOAL_LEFT, y: -1 });
     const topB = PF.geo.toCanvas({ x: PF.CFG.GOAL_RIGHT, y: 0 });
-
-    ctx.save();
-
-    ctx.fillStyle = "rgba(255,93,93,.16)";
-    ctx.strokeStyle = "rgba(255,93,93,.68)";
-    ctx.lineWidth = 2;
-
-    ctx.fillRect(topA.x, topA.y, topB.x - topA.x, topB.y - topA.y);
-    ctx.strokeRect(topA.x, topA.y, topB.x - topA.x, topB.y - topA.y);
 
     const botA = PF.geo.toCanvas({ x: PF.CFG.GOAL_LEFT, y: PF.CFG.cellsY });
     const botB = PF.geo.toCanvas({ x: PF.CFG.GOAL_RIGHT, y: PF.CFG.cellsY + 1 });
 
-    ctx.fillStyle = "rgba(93,155,255,.16)";
-    ctx.strokeStyle = "rgba(93,155,255,.68)";
+    ctx.save();
 
+    // Верхние ворота — цель Игрока 1 (красный)
+    ctx.fillStyle = "rgba(255,93,93,.18)";
+    ctx.strokeStyle = "rgba(255,93,93,.7)";
+    ctx.lineWidth = 2;
+    ctx.fillRect(topA.x, topA.y, topB.x - topA.x, topB.y - topA.y);
+    ctx.strokeRect(topA.x, topA.y, topB.x - topA.x, topB.y - topA.y);
+
+    // Нижние ворота — цель Игрока 2 (синий)
+    ctx.fillStyle = "rgba(93,155,255,.18)";
+    ctx.strokeStyle = "rgba(93,155,255,.7)";
     ctx.fillRect(botA.x, botA.y, botB.x - botA.x, botB.y - botA.y);
     ctx.strokeRect(botA.x, botA.y, botB.x - botA.x, botB.y - botA.y);
 
-    ctx.restore();
-  },
+    // Подписи имён игроков на воротах
+    if (state && state.players) {
+      const p1Name = this.truncateName(state.players[1] || "Игрок 1", 12);
+      const p2Name = this.truncateName(state.players[2] || "Игрок 2", 12);
 
-  drawGrid(ctx) {
-    ctx.save();
+      ctx.font = "bold 11px system-ui";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
 
-    ctx.strokeStyle = "#d8d0ba";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
+      // Имя Игрока 1 на верхних воротах
+      const topCenter = PF.geo.toCanvas({
+        x: PF.CFG.cellsX / 2,
+        y: -0.5
+      });
+      ctx.fillStyle = "rgba(255,93,93,.95)";
+      ctx.fillText(p1Name, topCenter.x, topCenter.y);
 
-    for (let x = 0; x <= PF.CFG.cellsX; x++) {
-      const a = PF.geo.toCanvas({ x, y: 0 });
-      const b = PF.geo.toCanvas({ x, y: PF.CFG.cellsY });
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-    }
-
-    for (let y = 0; y <= PF.CFG.cellsY; y++) {
-      const a = PF.geo.toCanvas({ x: 0, y });
-      const b = PF.geo.toCanvas({ x: PF.CFG.cellsX, y });
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
-    }
-
-    ctx.stroke();
-
-    const tl = PF.geo.toCanvas({ x: 0, y: 0 });
-    const br = PF.geo.toCanvas({ x: PF.CFG.cellsX, y: PF.CFG.cellsY });
-
-    ctx.strokeStyle = "#8f8874";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
-
-    ctx.restore();
-  },
-
-  drawPoints(ctx, state) {
-    ctx.save();
-
-    ctx.fillStyle = "rgba(43,43,43,.20)";
-
-    for (let x = 0; x <= PF.CFG.cellsX; x++) {
-      for (let y = 0; y <= PF.CFG.cellsY; y++) {
-        const p = PF.geo.toCanvas({ x, y });
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    ctx.fillStyle = "rgba(43,43,43,.42)";
-
-    for (const k of state.visited) {
-      const [x, y] = k.split(",").map(Number);
-      const p = PF.geo.toCanvas({ x, y });
-
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-      ctx.fill();
+      // Имя Игрока 2 на нижних воротах
+      const botCenter = PF.geo.toCanvas({
+        x: PF.CFG.cellsX / 2,
+        y: PF.CFG.cellsY + 0.5
+      });
+      ctx.fillStyle = "rgba(93,155,255,.95)";
+      ctx.fillText(p2Name, botCenter.x, botCenter.y);
     }
 
     ctx.restore();
