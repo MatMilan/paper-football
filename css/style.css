@@ -828,3 +828,15 @@ canvas {
     align-items: flex-start;
   }
 }
+.email-hint {
+  font-size: 13px;
+  color: var(--accent);
+  background: rgba(255, 213, 79, 0.1);
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+.email-hint strong {
+  color: var(--text);
+}
