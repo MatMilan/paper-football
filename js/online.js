@@ -6,10 +6,51 @@ PF.online = {
   pollingTimer: null,
   channelStatus: null,
   room: null,
+  finishInProgress: false,
+  roomFinished: false,
   subscription: null,
   roomsSubscription: null,
   isHost: false,
   myPlayerNumber: null,
+
+  buildStateForDB(state) {
+    return {
+      players: state.players,
+      currentPlayer: state.currentPlayer,
+      phase: state.phase,
+      ball: PF.geo.clone(state.ball),
+      displayBall: PF.geo.clone(state.displayBall),
+      turnStartBall: PF.geo.clone(state.turnStartBall),
+      path: state.path.map(p => PF.geo.clone(p)),
+      visited: Array.from(state.visited),
+      segments: state.segments.map(s => ({
+        a: PF.geo.clone(s.a),
+        b: PF.geo.clone(s.b),
+        player: s.player,
+        penalty: s.penalty
+      })),
+      turnSegments: state.turnSegments,
+      turnVisited: state.turnVisited,
+      timeLeft: state.timeLeft,
+      timeoutStreak: state.timeoutStreak,
+      cannotStreak: state.cannotStreak,
+      lastDrawOfferBy: state.lastDrawOfferBy,
+      over: state.over,
+      animating: false,
+      timeoutPending: false,
+      events: state.events,
+      result: state.result,
+      saved: state.saved,
+      lastSegment: state.lastSegment ? {
+        a: PF.geo.clone(state.lastSegment.a),
+        b: PF.geo.clone(state.lastSegment.b),
+        player: state.lastSegment.player,
+        penalty: state.lastSegment.penalty
+      } : null,
+      trail: [],
+      history: state.history
+    };
+  },
 
   async createRoom(roomCode, isPrivate, playerName) {
     if (!PF.cloud || !PF.cloud.ready) {
@@ -252,6 +293,11 @@ PF.online = {
 
     this.lastRevision = rev;
     this.room = newRoom;
+    if (newRoom.status === "finished") {
+      this.roomFinished = true;
+      this.clearActive();
+      this.stopPolling();
+    }
 
     if (!PF.game.state) return;
 
@@ -268,10 +314,11 @@ PF.online = {
   applyRemoteState(newState) {
     const s = PF.game.state;
     if (!s || !newState) return;
+
+    const wasOver = s.over;
+
     s.animating = false;
     s.timeoutPending = false;
-
-    console.log("Applying remote state, revision:", this.lastRevision);
 
     s.players = newState.players;
     s.currentPlayer = newState.currentPlayer;
@@ -313,58 +360,53 @@ PF.online = {
     PF.ui.updateTimer(s);
     PF.render.draw(s);
     PF.history.render(s);
-    // Если после хода соперника у текущего игрока нет ходов —
-    // хост автоматически назначает пенальти или ничью.
-    if (PF.game && PF.game.autoHandleNoMoves) {
+
+    // Конец матча у второго игрока
+    if (!wasOver && s.over) {
+      if (s.result?.type === "goal") {
+        const scorerName = s.players[s.result.winner] || "";
+        PF.audio.goal();
+        PF.ui.showResultOverlay(`Гол! ${scorerName}`, "goal");
+      } else if (s.result?.type === "draw") {
+        PF.audio.draw();
+        PF.ui.showResultOverlay(s.result.text || "Ничья", "draw");
+      }
+
+      if (PF.online) {
+        PF.online.showRatingFromState(s.result?.rating);
+      }
+
+      // Если хост получил финальное состояние от гостя,
+      // хост завершает матч и начисляет рейтинг.
+      if (
+        PF.online &&
+        PF.online.room &&
+        PF.online.isHost &&
+        !PF.online.finishInProgress &&
+        !PF.online.roomFinished
+      ) {
+        PF.online.finishOnlineMatch(s);
+      }
+    }
+
+    if (PF.game.autoHandleNoMoves) {
       PF.game.autoHandleNoMoves();
     }
   },
 
-  async updateRoomState(state) {
+  async updateRoomState(state, allowOver = false) {
     if (!this.room || !PF.cloud.client) return;
 
-    const stateForDB = {
-      players: state.players,
-      currentPlayer: state.currentPlayer,
-      phase: state.phase,
-      ball: PF.geo.clone(state.ball),
-      displayBall: PF.geo.clone(state.displayBall),
-      turnStartBall: PF.geo.clone(state.turnStartBall),
-      path: state.path.map(p => PF.geo.clone(p)),
-      visited: Array.from(state.visited),
-      segments: state.segments.map(s => ({
-        a: PF.geo.clone(s.a),
-        b: PF.geo.clone(s.b),
-        player: s.player,
-        penalty: s.penalty
-      })),
-      turnSegments: state.turnSegments,
-      turnVisited: state.turnVisited,
-      timeLeft: state.timeLeft,
-      timeoutStreak: state.timeoutStreak,
-      cannotStreak: state.cannotStreak,
-      lastDrawOfferBy: state.lastDrawOfferBy,
-      over: state.over,
-      animating: false,
-      timeoutPending: false,
-      events: state.events,
-      result: state.result,
-      saved: state.saved,
-      lastSegment: state.lastSegment ? {
-        a: PF.geo.clone(state.lastSegment.a),
-        b: PF.geo.clone(state.lastSegment.b),
-        player: state.lastSegment.player,
-        penalty: state.lastSegment.penalty
-      } : null,
-      trail: [],
-      history: state.history
-    };
+    // Завершение матча должно идти через finishOnlineMatch
+    if (state.over && !allowOver) return;
+
+    const stateForDB = this.buildStateForDB(state);
 
     try {
       const { data, error } = await PF.cloud.client.rpc("update_room_state", {
         p_room_id: this.room.id,
         p_state: stateForDB,
-        p_status: state.over ? "finished" : "playing",
+        p_status: "playing",
         p_current_player: state.currentPlayer
       });
 
@@ -375,17 +417,8 @@ PF.online = {
         this.lastRevision = data.revision;
         this.room = data;
 
-        if (state.over) {
-          // Освобождаем код комнаты после завершения матча.
-          try {
-            await PF.cloud.client
-              .from("rooms")
-              .update({ room_code: null })
-              .eq("id", this.room.id);
-          } catch (e) {
-            console.warn("Cannot release room code:", e);
-          }
-
+        if (data.status === "finished") {
+          this.roomFinished = true;
           this.clearActive();
           this.stopPolling();
         }
@@ -394,6 +427,74 @@ PF.online = {
       console.error("Update room error:", e);
     }
   },
+  
+  async finishOnlineMatch(state) {
+    if (!this.room || !PF.cloud.client) return;
+    if (!state || !state.over) return;
+    if (!this.isHost) return;
+    if (this.finishInProgress || this.roomFinished) return;
+
+    this.finishInProgress = true;
+
+    const stateForDB = this.buildStateForDB(state);
+
+    const isDraw = state.result?.type === "draw";
+    const winnerPlayer = state.result?.type === "goal" ? state.result.winner : null;
+
+    try {
+      const { data, error } = await PF.cloud.client.rpc("finish_online_match", {
+        p_room_id: this.room.id,
+        p_state: stateForDB,
+        p_is_draw: isDraw,
+        p_winner_player: winnerPlayer
+      });
+
+      if (error) throw error;
+
+      if (data && !data.already_finished) {
+        this.lastSentRevision = data.revision;
+        this.lastRevision = data.revision;
+        this.roomFinished = true;
+
+        this.clearActive();
+        this.stopPolling();
+
+        this.showRatingMessage(
+          data[`p${this.myPlayerNumber}_rating`],
+          data[`p${this.myPlayerNumber}_delta`]
+        );
+      }
+    } catch (e) {
+      console.error("Finish online match error:", e);
+    } finally {
+      this.finishInProgress = false;
+    }
+  },
+
+  showRatingMessage(ratingValue, deltaValue) {
+    if (ratingValue == null) return;
+
+    if (PF.cloud.currentProfile) {
+      PF.cloud.currentProfile.rating = ratingValue;
+
+      if (PF.ui.updateUserInfo) {
+        PF.ui.updateUserInfo();
+      }
+    }
+
+    const sign = deltaValue >= 0 ? "+" : "";
+    PF.ui.setMessage(`Ваш рейтинг: ${ratingValue} (${sign}${deltaValue})`);
+  },
+
+  showRatingFromState(rating) {
+    if (!rating || !this.myPlayerNumber) return;
+
+    const value = rating[`p${this.myPlayerNumber}`];
+    const delta = rating[`p${this.myPlayerNumber}_delta`];
+
+    this.showRatingMessage(value, delta);
+  },
+  
   saveActive() {
     if (!this.room) return;
 
