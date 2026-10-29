@@ -48,8 +48,8 @@ PF.online = {
         penalty: state.lastSegment.penalty
       } : null,
       trail: [],
-      history: state.history
-      settings: state.settings || null,
+      history: state.history,
+      settings: state.settings || null
     };
   },
 
