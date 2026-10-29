@@ -20,6 +20,11 @@
   
   cache() {
     this.els = {
+      turnIndicator: document.getElementById("turnIndicator"),
+      turnIndicatorText: document.getElementById("turnIndicatorText"),
+      opponentStatus: document.getElementById("opponentStatus"),
+      opponentStatusDot: document.getElementById("opponentStatusDot"),
+      opponentStatusText: document.getElementById("opponentStatusText"),
       copyCodeBtn: document.getElementById("copyCodeBtn"),
       copyLinkBtn: document.getElementById("copyLinkBtn"),
       inviteLinkInput: document.getElementById("inviteLinkInput"),
@@ -881,6 +886,7 @@
         : "пенальти";
 
     this.updateContinueButton();
+    this.updateTurnIndicator(state);
     const isOnlineActive = PF.online && PF.online.room;
 
     if (this.els.saveMatchBtn) {
@@ -989,6 +995,118 @@
       cellsY: fieldConfig.cellsY,
       goalWidth: fieldConfig.goalWidth
     };
+  },
+  updateTurnIndicator(state) {
+    if (!this.els.turnIndicator || !this.els.turnIndicatorText) return;
+
+    if (!state || state.over) {
+      this.els.turnIndicator.classList.add("hidden");
+      return;
+    }
+
+    this.els.turnIndicator.classList.remove("hidden");
+
+    const isOnline = PF.online && PF.online.room;
+    const isMyTurn = isOnline
+      ? state.currentPlayer === PF.online.myPlayerNumber
+      : true;
+
+    // Убираем все классы
+    this.els.turnIndicator.className = "turn-indicator";
+
+    if (isOnline) {
+      if (isMyTurn) {
+        this.els.turnIndicatorText.textContent = "🟢 Ваш ход";
+        this.els.turnIndicator.classList.add("your-turn");
+      } else {
+        this.els.turnIndicatorText.textContent = "⏳ Ход соперника";
+        this.els.turnIndicator.classList.add("opponent-turn");
+      }
+    } else {
+      // Локальная игра
+      const playerName = state.players[state.currentPlayer];
+      this.els.turnIndicatorText.textContent = `Ход: ${playerName}`;
+
+      if (state.currentPlayer === 1) {
+        this.els.turnIndicator.classList.add("local-p1");
+      } else {
+        this.els.turnIndicator.classList.add("local-p2");
+      }
+    }
+  },
+  updateOpponentStatus(status) {
+    if (!this.els.opponentStatus) return;
+
+    const isOnline = PF.online && PF.online.room;
+
+    if (!isOnline) {
+      this.els.opponentStatus.classList.add("hidden");
+      return;
+    }
+
+    this.els.opponentStatus.classList.remove("hidden");
+
+    if (!this.els.opponentStatusDot || !this.els.opponentStatusText) return;
+
+    // Сбрасываем классы
+    this.els.opponentStatusDot.className = "status-dot";
+
+    switch (status) {
+      case "connected":
+        this.els.opponentStatusDot.classList.add("connected");
+        this.els.opponentStatusText.textContent = "Соперник подключен";
+        break;
+
+      case "thinking":
+        this.els.opponentStatusDot.classList.add("thinking");
+        this.els.opponentStatusText.textContent = "Соперник думает…";
+        break;
+
+      case "disconnected":
+        this.els.opponentStatusDot.classList.add("disconnected");
+        this.els.opponentStatusText.textContent = "Соперник не отвечает";
+        break;
+
+      default:
+        this.els.opponentStatus.classList.add("hidden");
+    }
+  },
+  updateOpponentStatus(status) {
+    if (!this.els.opponentStatus) return;
+
+    const isOnline = PF.online && PF.online.room;
+
+    if (!isOnline) {
+      this.els.opponentStatus.classList.add("hidden");
+      return;
+    }
+
+    this.els.opponentStatus.classList.remove("hidden");
+
+    if (!this.els.opponentStatusDot || !this.els.opponentStatusText) return;
+
+    // Сбрасываем классы
+    this.els.opponentStatusDot.className = "status-dot";
+
+    switch (status) {
+      case "connected":
+        this.els.opponentStatusDot.classList.add("connected");
+        this.els.opponentStatusText.textContent = "Соперник подключен";
+        break;
+
+      case "thinking":
+        this.els.opponentStatusDot.classList.add("thinking");
+        this.els.opponentStatusText.textContent = "Соперник думает…";
+        break;
+
+      case "disconnected":
+        this.els.opponentStatusDot.classList.add("disconnected");
+        this.els.opponentStatusText.textContent = "Соперник не отвечает";
+        break;
+
+      default:
+        this.els.opponentStatus.classList.add("hidden");
+    }
   },
     
   confirmAndClearActiveGame(message) {
