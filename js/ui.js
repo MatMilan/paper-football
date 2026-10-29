@@ -1,3 +1,4 @@
+  PF.pendingInviteCode = null;
   PF.ui = {
   els: {},
   TIMER_CIRC: 2 * Math.PI * 20,
@@ -19,6 +20,12 @@
   
   cache() {
     this.els = {
+      copyCodeBtn: document.getElementById("copyCodeBtn"),
+      copyLinkBtn: document.getElementById("copyLinkBtn"),
+      inviteLinkInput: document.getElementById("inviteLinkInput"),
+      copyFeedback: document.getElementById("copyFeedback"),
+      inviteBanner: document.getElementById("inviteBanner"),
+      inviteBannerCode: document.getElementById("inviteBannerCode"),
       turnTimeSelect: document.getElementById("turnTimeSelect"),
       fieldSizeSelect: document.getElementById("fieldSizeSelect"),
 
@@ -166,6 +173,9 @@
   /* ==================== АВТОРИЗАЦИЯ ==================== */
 
   async checkAuthOnLoad() {
+    // Проверяем ссылку-приглашение
+    this.checkInviteLink();
+
     if (!PF.cloud || !PF.cloud.ready) {
       this.showScreen("authScreen");
       return;
@@ -180,7 +190,12 @@
         const restored = await this.tryRestoreOnline();
 
         if (!restored) {
-          this.showMenu();
+          // Если есть приглашение — сразу в онлайн
+          if (PF.pendingInviteCode) {
+            this.showOnlineScreen();
+          } else {
+            this.showMenu();
+          }
         }
       } else {
         this.showScreen("authScreen");
@@ -222,7 +237,12 @@
     this.els.guestBtn.addEventListener("click", () => {
       this.isGuest = true;
       PF.cloud.currentProfile = null;
-      this.showMenu();
+
+      if (PF.pendingInviteCode) {
+        this.showOnlineScreen();
+      } else {
+        this.showMenu();
+      }
     });
   },
 
@@ -239,7 +259,11 @@
       this.els.authError.textContent = "Вход...";
       await PF.cloud.signInWithEmail(email, password);
       await PF.cloud.getOrCreateProfile();
-      this.showMenu();
+      if (PF.pendingInviteCode) {
+        this.showOnlineScreen();
+      } else {
+        this.showMenu();
+      }
     } catch (e) {
       this.els.authError.textContent = "Ошибка входа: " + e.message;
     }
@@ -269,11 +293,50 @@
         this.els.authError.textContent = "Письмо отправлено! Проверьте почту (отправитель: Supabase Auth) и подтвердите регистрацию, затем войдите.";
       } else {
         await PF.cloud.getOrCreateProfile();
-        this.showMenu();
+        if (PF.pendingInviteCode) {
+          this.showOnlineScreen();
+        } else {
+          this.showMenu();
+        }
       }
     } catch (e) {
       this.els.authError.textContent = "Ошибка регистрации: " + e.message;
     }
+  },
+  async copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      this.showCopyFeedback();
+    } catch (e) {
+      // Фоллбэк для старых браузеров
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      this.showCopyFeedback();
+    }
+  },
+
+  showCopyFeedback() {
+    if (!this.els.copyFeedback) return;
+
+    this.els.copyFeedback.classList.remove("hidden");
+
+    clearTimeout(this._copyFeedbackTimer);
+    this._copyFeedbackTimer = setTimeout(() => {
+      this.els.copyFeedback.classList.add("hidden");
+    }, 2000);
+  },
+
+  updateInviteLink() {
+    if (!PF.online.room || !this.els.inviteLinkInput) return;
+
+    const link = PF.online.getInviteLink();
+    this.els.inviteLinkInput.value = link;
   },
 
   /* ==================== ГЛАВНОЕ МЕНЮ ==================== */
@@ -456,9 +519,16 @@
 
   showOnlineScreen() {
     this.showScreen("onlineScreen");
-    this.switchOnlineTab("rooms");
+
+    // Если есть приглашение — показываем экран подключения
+    if (PF.pendingInviteCode) {
+      this.showInviteScreen();
+    } else {
+      this.switchOnlineTab("rooms");
+    }
+
     this.loadRoomsList();
-    
+
     if (PF.online) {
       PF.online.subscribeToRoomsList(() => this.loadRoomsList());
     }
@@ -499,6 +569,23 @@
       }
       this.showScreen("menuScreen");
     });
+    // Копирование кода комнаты
+    if (this.els.copyCodeBtn) {
+      this.els.copyCodeBtn.addEventListener("click", () => {
+        if (PF.online.room) {
+          this.copyToClipboard(PF.online.room.room_code);
+        }
+      });
+    }
+
+    // Копирование ссылки-приглашения
+    if (this.els.copyLinkBtn) {
+      this.els.copyLinkBtn.addEventListener("click", () => {
+        if (PF.online.room) {
+          this.copyToClipboard(PF.online.getInviteLink());
+        }
+      });
+    }
   },
 
   switchOnlineTab(tab) {
@@ -537,10 +624,20 @@
       const hostName = room.host_name || "Хост";
       const code = room.room_code;
 
+      // Получаем настройки комнаты
+      const settingsInfo = PF.online.getRoomSettingsLabel(room);
+      const metaHtml = settingsInfo
+        ? `<div class="room-meta">
+             <span>${settingsInfo.sizeLabel}</span>
+             <span>${settingsInfo.timeLabel}</span>
+           </div>`
+        : "";
+
       item.innerHTML = `
         <div class="room-info">
           <div class="room-host">${this.escape(hostName)}</div>
           <div class="room-code">Код: ${code}</div>
+          ${metaHtml}
         </div>
         <button class="join-btn">Войти</button>
       `;
@@ -581,6 +678,7 @@
       this.els.createRoomForm.classList.add("hidden");
       this.els.waitingRoom.classList.remove("hidden");
       this.els.waitingRoomCode.textContent = room.room_code;
+      this.updateInviteLink();
 
       this.waitForPlayer(room);
     } catch (e) {
@@ -840,6 +938,40 @@
     }
 
     return false;
+  },
+  checkInviteLink() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const joinCode = urlParams.get("join");
+
+    if (!joinCode) return;
+
+    // Сохраняем код приглашения
+    PF.pendingInviteCode = joinCode.toUpperCase().trim();
+
+    // Убираем параметр из URL
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState({}, "", cleanUrl);
+  },
+
+  showInviteScreen() {
+    if (!PF.pendingInviteCode) return;
+
+    // Переключаемся на вкладку подключения
+    this.switchOnlineTab("join");
+
+    // Заполняем код
+    if (this.els.joinCodeInput) {
+      this.els.joinCodeInput.value = PF.pendingInviteCode;
+    }
+
+    // Показываем баннер
+    if (this.els.inviteBanner && this.els.inviteBannerCode) {
+      this.els.inviteBannerCode.textContent = PF.pendingInviteCode;
+      this.els.inviteBanner.classList.remove("hidden");
+    }
+
+    // Очищаем после отображения
+    PF.pendingInviteCode = null;
   },
   getSettingsFromSelects(turnTimeEl, fieldSizeEl) {
     const turnSeconds = parseInt(turnTimeEl.value, 10) || 20;
