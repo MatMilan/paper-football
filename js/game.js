@@ -79,14 +79,20 @@ PF.game = {
     return player === 1 ? 2 : 1;
   },
 
-  startMatch(p1, p2, cloudProfiles = null) {
+  startMatch(p1, p2, cloudProfiles = null, settings = null) {
     if (this.state && this.state.noMoveTimer) {
       clearTimeout(this.state.noMoveTimer);
     }
 
     clearInterval(this.timerId);
 
+    // Применяем настройки поля и времени
+    if (settings) {
+      PF.applyGameSettings(settings);
+    }
+
     this.state = PF.state.create({ 1: p1, 2: p2 });
+
     if (cloudProfiles && (cloudProfiles.p1 || cloudProfiles.p2)) {
       this.state.cloud = cloudProfiles;
     }
@@ -98,6 +104,7 @@ PF.game = {
       `Матч начался. Первым ходит ${this.state.players[this.state.currentPlayer]}.`,
       "event"
     );
+
     if (this.state.cloud?.p1 || this.state.cloud?.p2) {
       PF.history.add(
         this.state,
@@ -105,6 +112,7 @@ PF.game = {
         "event"
       );
     }
+
     if (PF.save) {
       PF.save.logStart(this.state);
     }
@@ -113,6 +121,7 @@ PF.game = {
     this.startTurn(this.state.currentPlayer, "simple");
     this.autoHandleNoMoves();
   },
+  
   startOnlineMatch(room) {
     if (PF.online) {
       PF.online.finishInProgress = false;
@@ -121,6 +130,10 @@ PF.game = {
     if (PF.ai) {
       PF.ai.enabled = false;
       PF.ai.stop();
+    }
+    // Применяем настройки из комнаты
+    if (room.state && room.state.settings) {
+      PF.applyGameSettings(room.state.settings);
     }
     const state = room.state;
 
