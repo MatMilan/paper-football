@@ -1,6 +1,64 @@
-  PF.game = {
+PF.game = {
+  paused: false,
   state: null,
   timerId: null,
+  
+  setPaused(value) {
+    this.paused = value;
+
+    if (value) {
+      clearInterval(this.timerId);
+    } else if (this.state && !this.state.over) {
+      this.resetTimer();
+    }
+  },
+
+  autoHandleNoMoves() {
+    const s = this.state;
+
+    if (!s || s.over || s.animating || this.paused) {
+      return false;
+    }
+
+    // В онлайне автоматическое решение принимает только хост.
+    if (PF.online && PF.online.room && !PF.online.isHost) {
+      return false;
+    }
+
+    const targets =
+      s.phase === "simple"
+        ? PF.rules.legalSimpleTargets(s)
+        : PF.rules.legalPenaltyTargets(s);
+
+    // Если ходы есть — ничего не делаем.
+    if (targets.length > 0) {
+      return false;
+    }
+
+    // Если нет простого хода — соперник бьёт пенальти.
+    if (s.phase === "simple") {
+      const next = this.other(s.currentPlayer);
+
+      PF.history.add(
+        s,
+        `Нет допустимых ходов. Пенальти пробивает ${s.players[next]}.`,
+        "warn"
+      );
+
+      this.startTurn(next, "penalty");
+
+      if (PF.online && PF.online.room) {
+        PF.online.updateRoomState(s);
+      }
+
+      return true;
+    }
+
+    // Если нет даже пенальти — ничья.
+    this.declareDraw("Ничья: у игроков нет допустимых ходов.");
+
+    return true;
+  },
 
   other(player) {
     return player === 1 ? 2 : 1;
@@ -38,6 +96,7 @@
 
     PF.ui.setMessage("Игра началась.");
     this.startTurn(this.state.currentPlayer, "simple");
+    this.autoHandleNoMoves();
   },
   startOnlineMatch(room) {
     if (PF.ai) {
@@ -82,6 +141,9 @@
     PF.ui.updateTimer(this.state);
     PF.render.draw(this.state);
     PF.history.render(this.state);
+    if (PF.online && PF.online.isHost) {
+      this.autoHandleNoMoves();
+    }
 
     this.resetTimer();
 
@@ -113,7 +175,6 @@
     PF.ui.updateHUD(s);
     PF.render.draw(s);
 
-    this.scheduleNoMoveIfNeeded();
     if (PF.ai) {
       PF.ai.maybePlay();
     }
@@ -133,7 +194,8 @@
 
   tick() {
     const s = this.state;
-    if (!s || s.over) return;
+
+    if (!s || s.over || this.paused) return;
 
     s.timeLeft -= 1;
     PF.ui.updateTimer(s);
@@ -335,6 +397,10 @@
 
     PF.ui.setMessage(`Ход переходит игроку ${s.players[next]}.`);
     this.startTurn(next, "simple");
+    const handled = this.autoHandleNoMoves();
+      if (!handled && PF.online && PF.online.room) {
+        PF.online.updateRoomState(this.state);
+      }
      // Синхронизация с облаком
     if (PF.online && PF.online.room) {
       PF.online.updateRoomState(s);
@@ -398,6 +464,11 @@
 
       PF.ui.setMessage(`Пенальти пробит. Ход игрока ${s.players[next]}.`);
       this.startTurn(next, "simple");
+      const handled = this.autoHandleNoMoves();
+
+      if (!handled && PF.online && PF.online.room) {
+        PF.online.updateRoomState(this.state);
+      }
     });
          // Синхронизация с облаком
     if (PF.online && PF.online.room) {
@@ -481,10 +552,12 @@
     }
 
     this.startTurn(other, "penalty");
-    PF.ui.setMessage(`Время вышло. Пенальти пробивает ${otherName}.`);
-    if (PF.online && PF.online.room) {
+    const handled = this.autoHandleNoMoves();
+
+    if (!handled && PF.online && PF.online.room) {
       PF.online.updateRoomState(this.state);
     }
+    PF.ui.setMessage(`Время вышло. Пенальти пробивает ${otherName}.`);
          // Синхронизация с облаком
     if (PF.online && PF.online.room) {
       PF.online.updateRoomState(s);
