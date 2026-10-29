@@ -127,6 +127,8 @@ PF.online = {
       this.room = data;
       this.isHost = true;
       this.myPlayerNumber = 1;
+      this.finishInProgress = false;
+      this.roomFinished = false;
       this.lastRevision = data.revision || 0;
       this.lastSentRevision = null;
 
@@ -185,6 +187,8 @@ PF.online = {
       this.room = data;
       this.isHost = false;
       this.myPlayerNumber = 2;
+      this.finishInProgress = false;
+      this.roomFinished = false;
       this.lastRevision = data.revision || 0;
       this.lastSentRevision = null;
 
@@ -373,7 +377,7 @@ PF.online = {
       }
 
       if (PF.online) {
-        PF.online.showRatingFromState(s.result?.rating);
+        PF.online.showResultMessage(s.result);
       }
 
       // Если хост получил финальное состояние от гостя,
@@ -385,8 +389,13 @@ PF.online = {
         !PF.online.finishInProgress &&
         !PF.online.roomFinished
       ) {
-        PF.online.finishOnlineMatch(s);
+        PF.online.reportMatchEnd(s);
       }
+    }
+
+    // Если рейтинг пришёл уже после того, как матч стал завершённым
+    if (s.over && PF.online && newState.result?.rating) {
+      PF.online.showResultMessage(s.result);
     }
 
     if (PF.game.autoHandleNoMoves) {
@@ -436,12 +445,21 @@ PF.online = {
 
     this.finishInProgress = true;
 
-    const stateForDB = this.buildStateForDB(state);
-
     const isDraw = state.result?.type === "draw";
-    const winnerPlayer = state.result?.type === "goal" ? state.result.winner : null;
+    const winnerPlayer =
+      state.result?.type === "goal"
+        ? state.result.winner || 0
+        : 0;
+
+    console.log("[online] finishOnlineMatch start", {
+      roomId: this.room.id,
+      isDraw,
+      winnerPlayer
+    });
 
     try {
+      const stateForDB = this.buildStateForDB(state);
+
       const { data, error } = await PF.cloud.client.rpc("finish_online_match", {
         p_room_id: this.room.id,
         p_state: stateForDB,
@@ -451,26 +469,77 @@ PF.online = {
 
       if (error) throw error;
 
+      console.log("[online] finishOnlineMatch result", data);
+
       if (data && !data.already_finished) {
         this.lastSentRevision = data.revision;
         this.lastRevision = data.revision;
         this.roomFinished = true;
 
+        if (this.room) {
+          this.room.status = "finished";
+        }
+
         this.clearActive();
         this.stopPolling();
 
-        this.showRatingMessage(
-          data[`p${this.myPlayerNumber}_rating`],
-          data[`p${this.myPlayerNumber}_delta`]
-        );
+        const my = this.myPlayerNumber;
+
+        this.showResultMessage({
+          ...(state.result || {}),
+          rating: {
+            [`p${my}`]: data[`p${my}_rating`],
+            [`p${my}_delta`]: data[`p${my}_delta`]
+          }
+        });
+      } else if (data && data.already_finished) {
+        this.roomFinished = true;
+
+        if (this.room) {
+          this.room.status = "finished";
+        }
+
+        this.clearActive();
+        this.stopPolling();
       }
     } catch (e) {
-      console.error("Finish online match error:", e);
+      console.error("[online] Finish match error:", e);
+      PF.ui.setMessage("Ошибка сохранения результата: " + e.message);
     } finally {
       this.finishInProgress = false;
     }
   },
+  
+  showResultMessage(result) {
+    const baseText = result?.text || "Матч завершён.";
+    const rating = result?.rating;
+    const my = this.myPlayerNumber;
 
+    if (!rating || !my) {
+      PF.ui.setMessage(baseText);
+      return;
+    }
+
+    const value = rating[`p${my}`];
+    const delta = rating[`p${my}_delta`];
+
+    if (value == null) {
+      PF.ui.setMessage(baseText);
+      return;
+    }
+
+    if (PF.cloud.currentProfile) {
+      PF.cloud.currentProfile.rating = value;
+
+      if (PF.ui.updateUserInfo) {
+        PF.ui.updateUserInfo();
+      }
+    }
+
+    const sign = delta >= 0 ? "+" : "";
+
+    PF.ui.setMessage(`${baseText} Ваш рейтинг: ${value} (${sign}${delta})`);
+  },
   showRatingMessage(ratingValue, deltaValue) {
     if (ratingValue == null) return;
 
@@ -557,6 +626,8 @@ PF.online = {
     this.room = data;
     this.isHost = data.host_profile_id === profile.id;
     this.myPlayerNumber = this.isHost ? 1 : 2;
+    this.finishInProgress = false;
+    this.roomFinished = false;
     this.lastRevision = data.revision || 0;
     this.lastSentRevision = null;
     this.pendingRemote = null;
@@ -566,6 +637,15 @@ PF.online = {
 
     console.log("Restored online room:", data.room_code);
     return data;
+  },
+  reportMatchEnd(state) {
+    if (!this.room || !state || !state.over) return;
+
+    if (this.isHost) {
+      this.finishOnlineMatch(state);
+    } else {
+      this.updateRoomState(state, true);
+    }
   },
 
   startPolling() {
