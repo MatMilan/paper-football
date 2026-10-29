@@ -1,4 +1,4 @@
-PF.ui = {
+  PF.ui = {
   els: {},
   TIMER_CIRC: 2 * Math.PI * 20,
   goalTimer: null,
@@ -10,6 +10,7 @@ PF.ui = {
     this.bindAuth();
     this.bindMenu();
     this.bindPvPSetup();
+    this.bindPvCSetup();
     this.bindOnline();
     this.bindGameControls();
     this.updateSoundBtn();
@@ -18,6 +19,17 @@ PF.ui = {
   
   cache() {
     this.els = {
+      turnTimeSelect: document.getElementById("turnTimeSelect"),
+      fieldSizeSelect: document.getElementById("fieldSizeSelect"),
+
+      pvpTurnTimeSelect: document.getElementById("pvpTurnTimeSelect"),
+      pvpFieldSizeSelect: document.getElementById("pvpFieldSizeSelect"),
+
+      pvcSetupScreen: document.getElementById("pvcSetupScreen"),
+      pvcSetupForm: document.getElementById("pvcSetupForm"),
+      pvcTurnTimeSelect: document.getElementById("pvcTurnTimeSelect"),
+      pvcFieldSizeSelect: document.getElementById("pvcFieldSizeSelect"),
+      pvcBackBtn: document.getElementById("pvcBackBtn"),
       // Экран авторизации
       authScreen: document.getElementById("authScreen"),
       googleAuthBtn: document.getElementById("googleAuthBtn"),
@@ -136,7 +148,7 @@ PF.ui = {
   /* ==================== ЭКРАНЫ ==================== */
 
   showScreen(screenId) {
-    const screens = ["authScreen", "menuScreen", "pvpSetupScreen", "onlineScreen", "app"];
+    const screens = ["authScreen", "menuScreen", "pvpSetupScreen", "pvcSetupScreen", "onlineScreen", "app"];
     screens.forEach(id => {
       const el = this.els[id];
       if (el) {
@@ -329,7 +341,8 @@ PF.ui = {
         return;
       }
 
-      this.startPvCMatch();
+      this.showScreen("pvcSetupScreen");
+      this.currentMode = "pvc";
     });
 
     this.els.menuOnlineBtn.addEventListener("click", () => {
@@ -376,7 +389,16 @@ PF.ui = {
       this.showScreen("menuScreen");
     });
   },
+  bindPvCSetup() {
+    this.els.pvcSetupForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      this.startPvCMatch();
+    });
 
+    this.els.pvcBackBtn.addEventListener("click", () => {
+      this.showScreen("menuScreen");
+    });
+  },
   startPvPMatch() {
     const p1 = this.els.pvpPlayer1Name.value.trim();
     const p2 = this.els.pvpPlayer2Name.value.trim();
@@ -399,7 +421,12 @@ PF.ui = {
       PF.ai.stop();
     }
 
-    PF.game.startMatch(p1, p2, null);
+    const settings = this.getSettingsFromSelects(
+      this.els.pvpTurnTimeSelect,
+      this.els.pvpFieldSizeSelect
+    );
+
+    PF.game.startMatch(p1, p2, null, settings);
     this.showScreen("app");
   },
 
@@ -416,9 +443,14 @@ PF.ui = {
       PF.ai.stop();
     }
 
-    PF.game.startMatch(p1, p2, null);
-    this.showScreen("app");
-  },
+    const settings = this.getSettingsFromSelects(
+      this.els.pvcTurnTimeSelect,
+      this.els.pvcFieldSizeSelect
+    );
+
+  PF.game.startMatch(p1, p2, null, settings);
+  this.showScreen("app");
+},
 
   /* ==================== ОНЛАЙН ==================== */
 
@@ -523,24 +555,33 @@ PF.ui = {
   },
 
   async createRoom() {
+    const profile = PF.cloud.currentProfile;
+    if (!profile) {
+      this.els.onlineError.textContent = "Нужно войти в облачный профиль.";
+      return;
+    }
+
     const code = this.els.roomCodeInput.value.trim().toUpperCase();
     const isPrivate = this.els.isPrivateRoom.checked;
-    const profile = PF.cloud.currentProfile;
 
     if (!code) {
       this.els.createError.textContent = "Введите код комнаты.";
       return;
-    }
+  }
+
+    const settings = this.getSettingsFromSelects(
+      this.els.turnTimeSelect,
+      this.els.fieldSizeSelect
+    );
 
     try {
       this.els.createError.textContent = "Создание комнаты...";
-      const room = await PF.online.createRoom(code, isPrivate, profile.display_name);
+      const room = await PF.online.createRoom(code, isPrivate, profile.display_name, settings);
 
       this.els.createRoomForm.classList.add("hidden");
       this.els.waitingRoom.classList.remove("hidden");
       this.els.waitingRoomCode.textContent = room.room_code;
 
-      // Ждём, пока подключится второй игрок
       this.waitForPlayer(room);
     } catch (e) {
       this.els.createError.textContent = e.message;
@@ -800,6 +841,20 @@ PF.ui = {
 
     return false;
   },
+  getSettingsFromSelects(turnTimeEl, fieldSizeEl) {
+    const turnSeconds = parseInt(turnTimeEl.value, 10) || 20;
+    const fieldSize = fieldSizeEl.value || "28x38";
+    const fieldConfig = PF.FIELD_SIZES[fieldSize] || PF.FIELD_SIZES["28x38"];
+
+    return {
+      turnSeconds,
+      fieldSize,
+      cellsX: fieldConfig.cellsX,
+      cellsY: fieldConfig.cellsY,
+      goalWidth: fieldConfig.goalWidth
+    };
+  },
+    
   confirmAndClearActiveGame(message) {
     if (PF.game.state && !PF.game.state.over) {
       if (!confirm(message)) {
