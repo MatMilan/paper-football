@@ -1,4 +1,10 @@
 PF.online = {
+  storageKey: "pf_online_active_v1",
+  lastRevision: 0,
+  lastSentRevision: null,
+  pendingRemote: null,
+  pollingTimer: null,
+  channelStatus: null,
   room: null,
   subscription: null,
   roomsSubscription: null,
@@ -80,8 +86,12 @@ PF.online = {
       this.room = data;
       this.isHost = true;
       this.myPlayerNumber = 1;
+      this.lastRevision = data.revision || 0;
+      this.lastSentRevision = null;
 
+      this.saveActive();
       this.subscribeToRoom();
+      this.startPolling();
 
       return data;
     } catch (e) {
@@ -134,8 +144,12 @@ PF.online = {
       this.room = data;
       this.isHost = false;
       this.myPlayerNumber = 2;
+      this.lastRevision = data.revision || 0;
+      this.lastSentRevision = null;
 
+      this.saveActive();
       this.subscribeToRoom();
+      this.startPolling();
 
       return data;
     } catch (e) {
@@ -165,14 +179,9 @@ PF.online = {
   },
 
   subscribeToRoom() {
-    if (!this.room || !PF.cloud.client) {
-      console.warn("Cannot subscribe: no room or client");
-      return;
-    }
+    if (!this.room || !PF.cloud.client) return;
 
     this.unsubscribe();
-
-    console.log("Subscribing to room:", this.room.id);
 
     this.subscription = PF.cloud.client
       .channel(`room-${this.room.id}`)
@@ -185,11 +194,11 @@ PF.online = {
           filter: `id=eq.${this.room.id}`
         },
         (payload) => {
-          console.log("Room update received:", payload);
           this.handleRoomUpdate(payload.new);
         }
       )
       .subscribe((status) => {
+        this.channelStatus = status;
         console.log("Subscription status:", status);
       });
   },
@@ -230,40 +239,39 @@ PF.online = {
   },
 
   handleRoomUpdate(newRoom) {
-    console.log("handleRoomUpdate called with:", newRoom);
-  
-    const oldRoom = this.room;
+    const rev = newRoom.revision || 0;
+
+    // Это ответ на наше же сообщение — не применяем его повторно.
+    if (rev === this.lastSentRevision) {
+      this.room = newRoom;
+      return;
+    }
+
+    // Устаревшее состояние — игнорируем.
+    if (rev <= this.lastRevision) return;
+
+    this.lastRevision = rev;
     this.room = newRoom;
 
-    if (!PF.game.state) {
-      console.warn("No game state");
+    if (!PF.game.state) return;
+
+    // Если мяч сейчас анимируется — отложим применение,
+    // чтобы не прервать ход посередине.
+    if (PF.game.state.animating) {
+      this.pendingRemote = newRoom.state;
       return;
     }
 
-    const oldState = oldRoom.state;
-    const newState = newRoom.state;
-
-    console.log("Old state segments:", oldState.segments?.length);
-    console.log("New state segments:", newState.segments?.length);
-
-    if (newState.over && !oldState.over) {
-      PF.game.state.over = true;
-      PF.game.state.phase = newState.phase;
-      PF.game.state.result = newState.result;
-      PF.render.draw(PF.game.state);
-      return;
-    }
-
-    if (newState.currentPlayer !== oldState.currentPlayer || newState.segments.length !== oldState.segments.length) {
-      console.log("Syncing state from room");
-      this.syncStateFromRoom(newState);
-    }
+    this.applyRemoteState(newRoom.state);
   },
 
-  syncStateFromRoom(newState) {
+  applyRemoteState(newState) {
     const s = PF.game.state;
-    if (!s) return;
+    if (!s || !newState) return;
 
+    console.log("Applying remote state, revision:", this.lastRevision);
+
+    s.players = newState.players;
     s.currentPlayer = newState.currentPlayer;
     s.phase = newState.phase;
     s.ball = PF.geo.clone(newState.ball);
@@ -271,34 +279,33 @@ PF.online = {
     s.turnStartBall = PF.geo.clone(newState.turnStartBall);
     s.path = newState.path.map(p => PF.geo.clone(p));
     s.visited = new Set(newState.visited);
+
     s.segments = newState.segments.map(seg => ({
       a: PF.geo.clone(seg.a),
       b: PF.geo.clone(seg.b),
       player: seg.player,
       penalty: seg.penalty
     }));
-    s.turnSegments = newState.turnSegments;
-    s.turnVisited = newState.turnVisited;
+
+    s.turnSegments = newState.turnSegments || [];
+    s.turnVisited = newState.turnVisited || [];
     s.timeLeft = newState.timeLeft;
     s.timeoutStreak = newState.timeoutStreak;
     s.cannotStreak = newState.cannotStreak;
     s.lastDrawOfferBy = newState.lastDrawOfferBy;
     s.over = newState.over;
-    s.animating = newState.animating;
-    s.events = newState.events;
+    s.events = newState.events || [];
     s.result = newState.result;
+    s.history = newState.history || [];
+
     s.lastSegment = newState.lastSegment ? {
       a: PF.geo.clone(newState.lastSegment.a),
       b: PF.geo.clone(newState.lastSegment.b),
       player: newState.lastSegment.player,
       penalty: newState.lastSegment.penalty
     } : null;
-    s.trail = newState.trail.map(t => ({
-      x: t.x,
-      y: t.y,
-      player: t.player
-    }));
-    s.history = newState.history;
+
+    s.trail = [];
 
     PF.ui.updateHUD(s);
     PF.ui.updateTimer(s);
@@ -331,8 +338,8 @@ PF.online = {
       cannotStreak: state.cannotStreak,
       lastDrawOfferBy: state.lastDrawOfferBy,
       over: state.over,
-      animating: state.animating,
-      timeoutPending: state.timeoutPending,
+      animating: false,
+      timeoutPending: false,
       events: state.events,
       result: state.result,
       saved: state.saved,
@@ -342,24 +349,151 @@ PF.online = {
         player: state.lastSegment.player,
         penalty: state.lastSegment.penalty
       } : null,
-      trail: state.trail.map(t => ({ x: t.x, y: t.y, player: t.player })),
+      trail: [],
       history: state.history
     };
 
     try {
-      await PF.cloud.client
-        .from("rooms")
-        .update({
-          state: stateForDB,
-          current_player: state.currentPlayer,
-          status: state.over ? "finished" : "playing"
-        })
-        .eq("id", this.room.id);
+      const { data, error } = await PF.cloud.client.rpc("update_room_state", {
+        p_room_id: this.room.id,
+        p_state: stateForDB,
+        p_status: state.over ? "finished" : "playing",
+        p_current_player: state.currentPlayer
+      });
+
+      if (error) throw error;
+
+      if (data) {
+        this.lastSentRevision = data.revision;
+        this.lastRevision = data.revision;
+        this.room = data;
+
+        if (state.over) {
+          this.clearActive();
+          this.stopPolling();
+        }
+      }
     } catch (e) {
       console.error("Update room error:", e);
     }
   },
+  saveActive() {
+    if (!this.room) return;
 
+    const data = {
+      roomId: this.room.id,
+      roomCode: this.room.room_code,
+      playerNumber: this.myPlayerNumber,
+      isHost: this.isHost
+    };
+
+    try {
+      localStorage.setItem(this.storageKey, JSON.stringify(data));
+    } catch (e) {
+      console.warn("Cannot save active room", e);
+    }
+  },
+
+  clearActive() {
+    try {
+      localStorage.removeItem(this.storageKey);
+    } catch (e) {}
+  },
+
+  getActive() {
+    try {
+      return JSON.parse(localStorage.getItem(this.storageKey) || "null");
+    } catch {
+      return null;
+    }
+  },
+
+  async restoreActiveRoom() {
+    const active = this.getActive();
+    if (!active) return null;
+
+    const profile = PF.cloud.currentProfile;
+    if (!profile) return null;
+
+    const { data, error } = await PF.cloud.client
+      .from("rooms")
+      .select("*")
+      .eq("id", active.roomId)
+      .maybeSingle();
+
+    if (error || !data) {
+      this.clearActive();
+      return null;
+    }
+
+    if (data.status === "finished") {
+      this.clearActive();
+      return null;
+    }
+
+    if (data.host_profile_id !== profile.id && data.guest_profile_id !== profile.id) {
+      this.clearActive();
+      return null;
+    }
+
+    this.room = data;
+    this.isHost = data.host_profile_id === profile.id;
+    this.myPlayerNumber = this.isHost ? 1 : 2;
+    this.lastRevision = data.revision || 0;
+    this.lastSentRevision = null;
+    this.pendingRemote = null;
+
+    this.subscribeToRoom();
+    this.startPolling();
+
+    console.log("Restored online room:", data.room_code);
+    return data;
+  },
+
+  startPolling() {
+    this.stopPolling();
+
+    this.pollingTimer = setInterval(() => {
+      this.refreshRoom();
+    }, 3000);
+  },
+
+  stopPolling() {
+    clearInterval(this.pollingTimer);
+    this.pollingTimer = null;
+  },
+
+  async refreshRoom() {
+    if (!this.room) return;
+
+    try {
+      const { data, error } = await PF.cloud.client
+        .from("rooms")
+        .select("*")
+        .eq("id", this.room.id)
+        .maybeSingle();
+
+      if (error || !data) return;
+
+      if ((data.revision || 0) > this.lastRevision) {
+        this.handleRoomUpdate(data);
+      } else if (this.channelStatus !== "SUBSCRIBED") {
+        console.log("Realtime disconnected, resubscribing");
+        this.subscribeToRoom();
+      }
+    } catch (e) {
+      console.warn("Refresh room error", e);
+    }
+  },
+
+  flushPending() {
+    if (this.pendingRemote && PF.game.state && !PF.game.state.animating) {
+      const state = this.pendingRemote;
+      this.pendingRemote = null;
+      this.applyRemoteState(state);
+    }
+  },
+  
   isMyTurn() {
     if (!PF.game.state || !this.room) return false;
     return PF.game.state.currentPlayer === this.myPlayerNumber;
@@ -368,9 +502,12 @@ PF.online = {
   canMakeMove() {
     return this.isMyTurn() && PF.game.state && !PF.game.state.over && !PF.game.state.animating;
   },
-
+  
   leaveRoom() {
     this.unsubscribe();
+    this.stopPolling();
+    this.clearActive();
+    this.pendingRemote = null;
     this.room = null;
     this.isHost = false;
     this.myPlayerNumber = null;
