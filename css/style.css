@@ -655,7 +655,40 @@ canvas {
     opacity: 0;
   }
 }
+#goalText {
+  animation: none !important;
+}
 
+.result-text {
+  animation: result-pop 2.1s ease forwards;
+}
+
+.result-text.goal {
+  color: #fff;
+}
+
+.result-text.draw {
+  color: var(--accent);
+}
+
+@keyframes result-pop {
+  0% {
+    transform: scale(0.45);
+    opacity: 0;
+  }
+  18% {
+    transform: scale(1.14);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.98);
+    opacity: 0;
+  }
+}
 /* ==================== МОДАЛКИ ==================== */
 
 .modal-header {
