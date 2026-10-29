@@ -193,6 +193,9 @@
 
   <!-- Онлайн экран -->
   <div id="onlineScreen" class="overlay hidden">
+    <div id="inviteBanner" class="invite-banner hidden">
+      <span>🎮 Вас пригласили в комнату <strong id="inviteBannerCode"></strong></span>
+    </div>
     <div class="card online-card">
       <h2>Онлайн-игра</h2>
 
@@ -264,9 +267,27 @@
       </div>
 
       <div id="waitingRoom" class="hidden">
-        <h3>Ожидание игрока...</h3>
-        <p>Код комнаты: <strong id="waitingRoomCode"></strong></p>
-        <p class="muted">Поделитесь кодом с другом</p>
+        <h3>Ожидание игрока…</h3>
+
+        <div class="invite-block">
+          <div class="invite-code-row">
+            <span class="invite-label">Код комнаты:</span>
+            <strong id="waitingRoomCode" class="invite-code"></strong>
+            <button id="copyCodeBtn" class="copy-btn" title="Скопировать код">📋</button>
+          </div>
+
+          <div class="invite-link-row">
+            <span class="invite-label">Ссылка-приглашение:</span>
+            <div class="invite-link-wrap">
+              <input id="inviteLinkInput" readonly class="invite-link" />
+              <button id="copyLinkBtn" class="copy-btn" title="Скопировать ссылку">📋</button>
+            </div>
+          </div>
+
+          <div id="copyFeedback" class="copy-feedback hidden">Скопировано!</div>
+        </div>
+
+        <p class="muted">Отправь код или ссылку другу</p>
         <button id="cancelRoomBtn">Отменить</button>
       </div>
 
