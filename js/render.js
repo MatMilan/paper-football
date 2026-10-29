@@ -1,4 +1,6 @@
 PF.render = {
+  highlightSegments: [],
+  highlightTimer: null,
   canvas: null,
   ctx: null,
   currentTargets: [],
@@ -21,6 +23,19 @@ PF.render = {
     if (PF.game.state) {
       this.draw(PF.game.state);
     }
+  },
+  highlightLastMove(segments) {
+    if (!segments || !segments.length) return;
+
+    this.highlightSegments = segments;
+
+    clearTimeout(this.highlightTimer);
+    this.highlightTimer = setTimeout(() => {
+      this.highlightSegments = [];
+      if (PF.game.state) {
+        this.draw(PF.game.state);
+      }
+    }, 2500);
   },
 
   eventToCanvas(e) {
@@ -258,6 +273,7 @@ PF.render = {
       const b = PF.geo.toCanvas(s.b);
 
       const isLast = state.lastSegment && state.lastSegment === s;
+      const isHighlighted = this.highlightSegments.includes(s);
 
       const baseColor =
         s.player === 1
@@ -272,7 +288,12 @@ PF.render = {
       ctx.strokeStyle = baseColor;
       ctx.lineWidth = s.penalty ? 4 : 3;
 
-      if (isLast) {
+      if (isHighlighted) {
+        // Яркая подсветка последнего хода соперника
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 20;
+        ctx.lineWidth += 2;
+      } else if (isLast) {
         ctx.shadowColor = glowColor;
         ctx.shadowBlur = 14;
         ctx.lineWidth += 1.4;
