@@ -228,9 +228,9 @@ PF.ui = {
     try {
       this.els.authError.textContent = "Регистрация...";
       const result = await PF.cloud.signUpWithEmail(email, password, displayName);
-      
+    
       if (result.user && !result.session) {
-        this.els.authError.textContent = "Проверьте почту для подтверждения, затем войдите.";
+        this.els.authError.textContent = "Письмо отправлено! Проверьте почту (отправитель: Supabase Auth) и подтвердите регистрацию, затем войдите.";
       } else {
         await PF.cloud.getOrCreateProfile();
         this.showMenu();
