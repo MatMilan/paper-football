@@ -165,11 +165,11 @@ PF.render = {
 
     ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    this.drawGoals(ctx);
+    this.drawGoals(ctx, state);
     this.drawGrid(ctx);
     this.drawPoints(ctx, state);
     this.drawSegments(ctx, state);
-    
+
     if (!state.animating) {
       this.drawTargets(ctx, state);
     }
@@ -227,6 +227,7 @@ PF.render = {
 
     ctx.restore();
   },
+
   drawGrid(ctx) {
     ctx.save();
 
@@ -260,6 +261,34 @@ PF.render = {
     ctx.restore();
   },
 
+  drawPoints(ctx, state) {
+    ctx.save();
+
+    ctx.fillStyle = "rgba(43,43,43,.20)";
+
+    for (let x = 0; x <= PF.CFG.cellsX; x++) {
+      for (let y = 0; y <= PF.CFG.cellsY; y++) {
+        const p = PF.geo.toCanvas({ x, y });
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.fillStyle = "rgba(43,43,43,.42)";
+
+    for (const k of state.visited) {
+      const [x, y] = k.split(",").map(Number);
+      const p = PF.geo.toCanvas({ x, y });
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  },
+
   drawSegments(ctx, state) {
     ctx.save();
     ctx.lineCap = "round";
@@ -285,7 +314,6 @@ PF.render = {
       ctx.lineWidth = s.penalty ? 4 : 3;
 
       if (isHighlighted) {
-        // Яркая подсветка последнего хода соперника
         ctx.shadowColor = glowColor;
         ctx.shadowBlur = 20;
         ctx.lineWidth += 2;
@@ -401,41 +429,6 @@ PF.render = {
 
     ctx.restore();
   },
-  
-  drawGoalLabels(ctx, state) {
-  if (!state || !state.players) return;
-
-  const centerX = PF.CFG.cellsX / 2;
-
-  const topPos = PF.geo.toCanvas({
-    x: centerX,
-    y: 1.35
-  });
-
-  const bottomPos = PF.geo.toCanvas({
-    x: centerX,
-    y: PF.CFG.cellsY - 1.35
-  });
-
-  const p1 = this.truncateName(state.players[1], 14);
-  const p2 = this.truncateName(state.players[2], 14);
-
-  this.drawPillText(
-    ctx,
-    `${p1} сюда ↑`,
-    topPos.x,
-    topPos.y,
-    "#d64545"
-  );
-
-  this.drawPillText(
-    ctx,
-    `${p2} сюда ↓`,
-    bottomPos.x,
-    bottomPos.y,
-    "#2f6fdb"
-  );
-},
 
 truncateName(name, max = 14) {
   const clean = String(name || "").trim();
